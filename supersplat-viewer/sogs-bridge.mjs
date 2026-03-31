@@ -13,7 +13,8 @@ const tmpTo = new Vec3();
 const tmpFocus = new Vec3();
 
 const AXIS_LEN = 45;
-const AXIS_RADIUS = 0.28;
+/** Cylinder radius for RGB axis guides (world + splat-local); keep very thin so reads as line-like. */
+const AXIS_RADIUS = 0.0028;
 
 window.firstFrame = function sogsFirstFrameHook() {
   window.parent.postMessage({ type: "supersplat:firstFrame" }, "*");
