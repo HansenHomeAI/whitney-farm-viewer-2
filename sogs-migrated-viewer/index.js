@@ -15167,7 +15167,7 @@ function SogsMigratedViewer({
                 {
                   id: "splat-rx",
                   type: "number",
-                  step: "0.001",
+                  step: "1",
                   disabled: toggleDisabled,
                   value: splatRotation[0],
                   onChange: (e) => {
@@ -15185,7 +15185,7 @@ function SogsMigratedViewer({
                 {
                   id: "splat-ry",
                   type: "number",
-                  step: "0.001",
+                  step: "1",
                   disabled: toggleDisabled,
                   value: splatRotation[1],
                   onChange: (e) => {
@@ -15203,7 +15203,7 @@ function SogsMigratedViewer({
                 {
                   id: "splat-rz",
                   type: "number",
-                  step: "0.001",
+                  step: "1",
                   disabled: toggleDisabled,
                   value: splatRotation[2],
                   onChange: (e) => {
