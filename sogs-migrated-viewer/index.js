@@ -14327,6 +14327,42 @@ function roundSplatThousandths(n) {
   if (!Number.isFinite(n)) return n;
   return Math.round(n * 1000) / 1000;
 }
+function formatSplatStrFromNums(position, rotation, scale) {
+  return {
+    px: String(roundSplatThousandths(position[0])),
+    py: String(roundSplatThousandths(position[1])),
+    pz: String(roundSplatThousandths(position[2])),
+    rx: String(roundSplatThousandths(rotation[0])),
+    ry: String(roundSplatThousandths(rotation[1])),
+    rz: String(roundSplatThousandths(rotation[2])),
+    sc: String(roundSplatThousandths(scale))
+  };
+}
+function splatNumericFromString(raw) {
+  const t = String(raw ?? "").trim();
+  if (t === "" || t === "-" || t === "." || t === "-.") return null;
+  const v = parseFloat(t);
+  return Number.isFinite(v) ? roundSplatThousandths(v) : null;
+}
+function commitSplatAxisString(raw, fallback) {
+  const t = String(raw ?? "").trim();
+  if (t === "" || t === "-" || t === "." || t === "-.") return roundSplatThousandths(0);
+  const v = parseFloat(t);
+  return Number.isFinite(v) ? roundSplatThousandths(v) : roundSplatThousandths(fallback);
+}
+function commitSplatScaleString(raw, fallback) {
+  const t = String(raw ?? "").trim();
+  if (t === "" || t === "-" || t === "." || t === "-.") {
+    const f = Number.isFinite(fallback) && fallback > 0 ? fallback : 1;
+    return roundSplatThousandths(f);
+  }
+  const v = parseFloat(t);
+  if (!Number.isFinite(v) || v <= 0) {
+    const f = Number.isFinite(fallback) && fallback > 0 ? fallback : 1;
+    return roundSplatThousandths(f);
+  }
+  return roundSplatThousandths(v);
+}
 function SogsMigratedViewer({
   useBundleProxy = false,
   viewerBase = DEFAULT_VIEWER_BASE,
@@ -14379,6 +14415,14 @@ function SogsMigratedViewer({
     return [roundSplatThousandths(d.rotation[0]), roundSplatThousandths(d.rotation[1]), roundSplatThousandths(d.rotation[2])];
   });
   const [splatScale, setSplatScale] = (0, import_react9.useState)(() => roundSplatThousandths(createDefaultScenePayload().scale));
+  const [splatStr, setSplatStr] = (0, import_react9.useState)(() => {
+    const d = createDefaultScenePayload();
+    return formatSplatStrFromNums(
+      [roundSplatThousandths(d.position[0]), roundSplatThousandths(d.position[1]), roundSplatThousandths(d.position[2])],
+      [roundSplatThousandths(d.rotation[0]), roundSplatThousandths(d.rotation[1]), roundSplatThousandths(d.rotation[2])],
+      roundSplatThousandths(d.scale)
+    );
+  });
   const [splatCopyFeedback, setSplatCopyFeedback] = (0, import_react9.useState)(null);
   const [showWorldAxes, setShowWorldAxes] = (0, import_react9.useState)(false);
   const [cameraYMin, setCameraYMin] = (0, import_react9.useState)(CANYON_VISTA_CAMERA_WORLD_BOUNDS.yMin);
@@ -14477,7 +14521,7 @@ function SogsMigratedViewer({
         const scene = createDefaultScenePayload();
         const hv = activeHoleViewRef.current;
         const t = hv.target;
-        const sp = hv.startPosition;
+        const startPos = hv.startPosition;
         try {
           ignoreNextSogsStateRef.current = true;
           event.source.postMessage(
@@ -14493,7 +14537,7 @@ function SogsMigratedViewer({
           event.source.postMessage(
             {
               type: "sogs:cameraLookAt",
-              position: [sp.x, sp.y, sp.z],
+              position: [startPos.x, startPos.y, startPos.z],
               target: [t.x, t.y, t.z],
               fov: scene.fov
             },
@@ -14503,15 +14547,19 @@ function SogsMigratedViewer({
         } catch {
         }
         poseRef.current = {
-          position: { x: sp.x, y: sp.y, z: sp.z },
+          position: { x: startPos.x, y: startPos.y, z: startPos.z },
           target: { x: t.x, y: t.y, z: t.z },
           fov: scene.fov
         };
         orbitFocusRef.current = { x: t.x, y: t.y, z: t.z };
         lastScriptedRef.current = false;
-        setSplatPosition([roundSplatThousandths(scene.position[0]), roundSplatThousandths(scene.position[1]), roundSplatThousandths(scene.position[2])]);
-        setSplatRotation([roundSplatThousandths(scene.rotation[0]), roundSplatThousandths(scene.rotation[1]), roundSplatThousandths(scene.rotation[2])]);
-        setSplatScale(roundSplatThousandths(scene.scale));
+        const sp = [roundSplatThousandths(scene.position[0]), roundSplatThousandths(scene.position[1]), roundSplatThousandths(scene.position[2])];
+        const sr = [roundSplatThousandths(scene.rotation[0]), roundSplatThousandths(scene.rotation[1]), roundSplatThousandths(scene.rotation[2])];
+        const ss = roundSplatThousandths(scene.scale);
+        setSplatPosition(sp);
+        setSplatRotation(sr);
+        setSplatScale(ss);
+        setSplatStr(formatSplatStrFromNums(sp, sr, ss));
         setViewerState("ready");
       }
       if (event.data?.type === "sogs:pickFocus" && event.source === iframeRef.current?.contentWindow) {
@@ -14574,14 +14622,14 @@ function SogsMigratedViewer({
           ignoreNextSogsStateRef.current = false;
         } else {
           const st = event.data;
-          if (Array.isArray(st.position) && st.position.length === 3) {
-            setSplatPosition([roundSplatThousandths(st.position[0]), roundSplatThousandths(st.position[1]), roundSplatThousandths(st.position[2])]);
-          }
-          if (Array.isArray(st.rotation) && st.rotation.length === 3) {
-            setSplatRotation([roundSplatThousandths(st.rotation[0]), roundSplatThousandths(st.rotation[1]), roundSplatThousandths(st.rotation[2])]);
-          }
-          if (typeof st.scale === "number" && Number.isFinite(st.scale)) {
-            setSplatScale(roundSplatThousandths(st.scale));
+          if (Array.isArray(st.position) && st.position.length === 3 && Array.isArray(st.rotation) && st.rotation.length === 3 && typeof st.scale === "number" && Number.isFinite(st.scale)) {
+            const sp = [roundSplatThousandths(st.position[0]), roundSplatThousandths(st.position[1]), roundSplatThousandths(st.position[2])];
+            const sr = [roundSplatThousandths(st.rotation[0]), roundSplatThousandths(st.rotation[1]), roundSplatThousandths(st.rotation[2])];
+            const ss = roundSplatThousandths(st.scale);
+            setSplatPosition(sp);
+            setSplatRotation(sr);
+            setSplatScale(ss);
+            setSplatStr(formatSplatStrFromNums(sp, sr, ss));
           }
         }
       }
@@ -14616,14 +14664,22 @@ function SogsMigratedViewer({
       ignoreNextSogsStateRef.current = true;
       postToWindow(win, {
         type: "sogs:apply",
-        position: [roundSplatThousandths(splatPosition[0]), roundSplatThousandths(splatPosition[1]), roundSplatThousandths(splatPosition[2])],
-        rotation: [roundSplatThousandths(splatRotation[0]), roundSplatThousandths(splatRotation[1]), roundSplatThousandths(splatRotation[2])],
-        scale: roundSplatThousandths(splatScale),
+        position: [
+          splatNumericFromString(splatStr.px) ?? splatPosition[0],
+          splatNumericFromString(splatStr.py) ?? splatPosition[1],
+          splatNumericFromString(splatStr.pz) ?? splatPosition[2]
+        ],
+        rotation: [
+          splatNumericFromString(splatStr.rx) ?? splatRotation[0],
+          splatNumericFromString(splatStr.ry) ?? splatRotation[1],
+          splatNumericFromString(splatStr.rz) ?? splatRotation[2]
+        ],
+        scale: splatNumericFromString(splatStr.sc) ?? splatScale,
         fov
       });
     }, 350);
     return () => clearTimeout(id);
-  }, [splatPosition, splatRotation, splatScale, viewerState, splatAlignOpen]);
+  }, [splatStr.px, splatStr.py, splatStr.pz, splatStr.rx, splatStr.ry, splatStr.rz, splatStr.sc, splatPosition, splatRotation, splatScale, viewerState, splatAlignOpen]);
   (0, import_react9.useEffect)(() => {
     if (viewerState !== "ready" || !iframeRef.current) return;
     let raf = 0;
@@ -15112,14 +15168,21 @@ function SogsMigratedViewer({
                 "input",
                 {
                   id: "splat-px",
-                  type: "number",
-                  step: "0.001",
+                  type: "text",
+                  inputMode: "decimal",
                   disabled: toggleDisabled,
-                  value: splatPosition[0],
+                  value: splatStr.px,
                   onChange: (e) => {
-                    const v = roundSplatThousandths(parseFloat(e.target.value));
-                    if (!Number.isFinite(v)) return;
-                    setSplatPosition((p) => [v, p[1], p[2]]);
+                    const raw = e.target.value;
+                    setSplatStr((s) => ({ ...s, px: raw }));
+                    const n = splatNumericFromString(raw);
+                    if (n !== null) setSplatPosition((p) => [n, p[1], p[2]]);
+                  },
+                  onBlur: (e) => {
+                    const raw = e.target.value;
+                    const c = commitSplatAxisString(raw, splatPosition[0]);
+                    setSplatPosition((p) => [c, p[1], p[2]]);
+                    setSplatStr((s) => ({ ...s, px: String(c) }));
                   }
                 }
               )
@@ -15130,14 +15193,21 @@ function SogsMigratedViewer({
                 "input",
                 {
                   id: "splat-py",
-                  type: "number",
-                  step: "0.001",
+                  type: "text",
+                  inputMode: "decimal",
                   disabled: toggleDisabled,
-                  value: splatPosition[1],
+                  value: splatStr.py,
                   onChange: (e) => {
-                    const v = roundSplatThousandths(parseFloat(e.target.value));
-                    if (!Number.isFinite(v)) return;
-                    setSplatPosition((p) => [p[0], v, p[2]]);
+                    const raw = e.target.value;
+                    setSplatStr((s) => ({ ...s, py: raw }));
+                    const n = splatNumericFromString(raw);
+                    if (n !== null) setSplatPosition((p) => [p[0], n, p[2]]);
+                  },
+                  onBlur: (e) => {
+                    const raw = e.target.value;
+                    const c = commitSplatAxisString(raw, splatPosition[1]);
+                    setSplatPosition((p) => [p[0], c, p[2]]);
+                    setSplatStr((s) => ({ ...s, py: String(c) }));
                   }
                 }
               )
@@ -15148,14 +15218,21 @@ function SogsMigratedViewer({
                 "input",
                 {
                   id: "splat-pz",
-                  type: "number",
-                  step: "0.001",
+                  type: "text",
+                  inputMode: "decimal",
                   disabled: toggleDisabled,
-                  value: splatPosition[2],
+                  value: splatStr.pz,
                   onChange: (e) => {
-                    const v = roundSplatThousandths(parseFloat(e.target.value));
-                    if (!Number.isFinite(v)) return;
-                    setSplatPosition((p) => [p[0], p[1], v]);
+                    const raw = e.target.value;
+                    setSplatStr((s) => ({ ...s, pz: raw }));
+                    const n = splatNumericFromString(raw);
+                    if (n !== null) setSplatPosition((p) => [p[0], p[1], n]);
+                  },
+                  onBlur: (e) => {
+                    const raw = e.target.value;
+                    const c = commitSplatAxisString(raw, splatPosition[2]);
+                    setSplatPosition((p) => [p[0], p[1], c]);
+                    setSplatStr((s) => ({ ...s, pz: String(c) }));
                   }
                 }
               )
@@ -15166,14 +15243,21 @@ function SogsMigratedViewer({
                 "input",
                 {
                   id: "splat-rx",
-                  type: "number",
-                  step: "1",
+                  type: "text",
+                  inputMode: "decimal",
                   disabled: toggleDisabled,
-                  value: splatRotation[0],
+                  value: splatStr.rx,
                   onChange: (e) => {
-                    const v = roundSplatThousandths(parseFloat(e.target.value));
-                    if (!Number.isFinite(v)) return;
-                    setSplatRotation((r) => [v, r[1], r[2]]);
+                    const raw = e.target.value;
+                    setSplatStr((s) => ({ ...s, rx: raw }));
+                    const n = splatNumericFromString(raw);
+                    if (n !== null) setSplatRotation((r) => [n, r[1], r[2]]);
+                  },
+                  onBlur: (e) => {
+                    const raw = e.target.value;
+                    const c = commitSplatAxisString(raw, splatRotation[0]);
+                    setSplatRotation((r) => [c, r[1], r[2]]);
+                    setSplatStr((s) => ({ ...s, rx: String(c) }));
                   }
                 }
               )
@@ -15184,14 +15268,21 @@ function SogsMigratedViewer({
                 "input",
                 {
                   id: "splat-ry",
-                  type: "number",
-                  step: "1",
+                  type: "text",
+                  inputMode: "decimal",
                   disabled: toggleDisabled,
-                  value: splatRotation[1],
+                  value: splatStr.ry,
                   onChange: (e) => {
-                    const v = roundSplatThousandths(parseFloat(e.target.value));
-                    if (!Number.isFinite(v)) return;
-                    setSplatRotation((r) => [r[0], v, r[2]]);
+                    const raw = e.target.value;
+                    setSplatStr((s) => ({ ...s, ry: raw }));
+                    const n = splatNumericFromString(raw);
+                    if (n !== null) setSplatRotation((r) => [r[0], n, r[2]]);
+                  },
+                  onBlur: (e) => {
+                    const raw = e.target.value;
+                    const c = commitSplatAxisString(raw, splatRotation[1]);
+                    setSplatRotation((r) => [r[0], c, r[2]]);
+                    setSplatStr((s) => ({ ...s, ry: String(c) }));
                   }
                 }
               )
@@ -15202,14 +15293,21 @@ function SogsMigratedViewer({
                 "input",
                 {
                   id: "splat-rz",
-                  type: "number",
-                  step: "1",
+                  type: "text",
+                  inputMode: "decimal",
                   disabled: toggleDisabled,
-                  value: splatRotation[2],
+                  value: splatStr.rz,
                   onChange: (e) => {
-                    const v = roundSplatThousandths(parseFloat(e.target.value));
-                    if (!Number.isFinite(v)) return;
-                    setSplatRotation((r) => [r[0], r[1], v]);
+                    const raw = e.target.value;
+                    setSplatStr((s) => ({ ...s, rz: raw }));
+                    const n = splatNumericFromString(raw);
+                    if (n !== null) setSplatRotation((r) => [r[0], r[1], n]);
+                  },
+                  onBlur: (e) => {
+                    const raw = e.target.value;
+                    const c = commitSplatAxisString(raw, splatRotation[2]);
+                    setSplatRotation((r) => [r[0], r[1], c]);
+                    setSplatStr((s) => ({ ...s, rz: String(c) }));
                   }
                 }
               )
@@ -15220,15 +15318,21 @@ function SogsMigratedViewer({
                 "input",
                 {
                   id: "splat-sc",
-                  type: "number",
-                  min: "1e-6",
-                  step: "0.001",
+                  type: "text",
+                  inputMode: "decimal",
                   disabled: toggleDisabled,
-                  value: splatScale,
+                  value: splatStr.sc,
                   onChange: (e) => {
-                    const v = roundSplatThousandths(parseFloat(e.target.value));
-                    if (!Number.isFinite(v) || v <= 0) return;
-                    setSplatScale(v);
+                    const raw = e.target.value;
+                    setSplatStr((s) => ({ ...s, sc: raw }));
+                    const n = splatNumericFromString(raw);
+                    if (n !== null && n > 0) setSplatScale(n);
+                  },
+                  onBlur: (e) => {
+                    const raw = e.target.value;
+                    const c = commitSplatScaleString(raw, splatScale);
+                    setSplatScale(c);
+                    setSplatStr((s) => ({ ...s, sc: String(c) }));
                   }
                 }
               )
@@ -15278,6 +15382,7 @@ function SogsMigratedViewer({
                   setSplatPosition(pos);
                   setSplatRotation(rot);
                   setSplatScale(sc);
+                  setSplatStr(formatSplatStrFromNums(pos, rot, sc));
                   ignoreNextSogsStateRef.current = true;
                   postToWindow(iframeRef.current?.contentWindow, {
                     type: "sogs:apply",
