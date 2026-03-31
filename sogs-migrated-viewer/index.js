@@ -7281,10 +7281,10 @@ var import_react9 = __toESM(require_react(), 1);
 
 // lib/sogsViewerSceneDefaults.ts
 var SOGS_DEFAULT_SCENE = {
-  /** scene-v1 export 2026-03-25 */
-  position: [0, 0.231, 0],
+  /** scene-v1 export 2026-03-31 */
+  position: [0.03, 0.1, 0.15],
   /** Euler ° (PlayCanvas order: X, Y, Z) */
-  rotation: [-82, -90, 0],
+  rotation: [-100, 0, 1.23],
   scale: 1,
   fov: 60
 };
