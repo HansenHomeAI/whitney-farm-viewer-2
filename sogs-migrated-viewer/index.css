@@ -1233,18 +1233,18 @@
   border: 1.5px solid rgba(255, 255, 255, 0.5);
   background: transparent;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.17);
-  animation: sogs-tap-pick-feedback-pop 0.55s ease-out forwards;
+  animation: sogs-tap-pick-feedback-pop 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes sogs-tap-pick-feedback-pop {
   0% {
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.55);
   }
-  35% {
+  18% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1.05);
   }
-  70% {
+  52% {
     opacity: 0.92;
     transform: translate(-50%, -50%) scale(1);
   }
