@@ -14319,6 +14319,10 @@ function postToWindow(win, payload) {
   } catch {
   }
 }
+function roundSplatThousandths(n) {
+  if (!Number.isFinite(n)) return n;
+  return Math.round(n * 1000) / 1000;
+}
 function SogsMigratedViewer({
   useBundleProxy = false,
   viewerBase = DEFAULT_VIEWER_BASE,
@@ -14362,9 +14366,15 @@ function SogsMigratedViewer({
   const [pathPanelOpen, setPathPanelOpen] = (0, import_react9.useState)(false);
   const [sogsBundleOpen, setSogsBundleOpen] = (0, import_react9.useState)(false);
   const [splatAlignOpen, setSplatAlignOpen] = (0, import_react9.useState)(false);
-  const [splatPosition, setSplatPosition] = (0, import_react9.useState)(() => [...createDefaultScenePayload().position]);
-  const [splatRotation, setSplatRotation] = (0, import_react9.useState)(() => [...createDefaultScenePayload().rotation]);
-  const [splatScale, setSplatScale] = (0, import_react9.useState)(() => createDefaultScenePayload().scale);
+  const [splatPosition, setSplatPosition] = (0, import_react9.useState)(() => {
+    const d = createDefaultScenePayload();
+    return [roundSplatThousandths(d.position[0]), roundSplatThousandths(d.position[1]), roundSplatThousandths(d.position[2])];
+  });
+  const [splatRotation, setSplatRotation] = (0, import_react9.useState)(() => {
+    const d = createDefaultScenePayload();
+    return [roundSplatThousandths(d.rotation[0]), roundSplatThousandths(d.rotation[1]), roundSplatThousandths(d.rotation[2])];
+  });
+  const [splatScale, setSplatScale] = (0, import_react9.useState)(() => roundSplatThousandths(createDefaultScenePayload().scale));
   const [splatCopyFeedback, setSplatCopyFeedback] = (0, import_react9.useState)(null);
   const [showWorldAxes, setShowWorldAxes] = (0, import_react9.useState)(false);
   const [detailsOpen, setDetailsOpen] = (0, import_react9.useState)(false);
@@ -14467,9 +14477,9 @@ function SogsMigratedViewer({
           event.source.postMessage(
             {
               type: "sogs:apply",
-              position: scene.position,
-              rotation: scene.rotation,
-              scale: scene.scale,
+              position: [roundSplatThousandths(scene.position[0]), roundSplatThousandths(scene.position[1]), roundSplatThousandths(scene.position[2])],
+              rotation: [roundSplatThousandths(scene.rotation[0]), roundSplatThousandths(scene.rotation[1]), roundSplatThousandths(scene.rotation[2])],
+              scale: roundSplatThousandths(scene.scale),
               fov: scene.fov
             },
             "*"
@@ -14493,9 +14503,9 @@ function SogsMigratedViewer({
         };
         orbitFocusRef.current = { x: t.x, y: t.y, z: t.z };
         lastScriptedRef.current = false;
-        setSplatPosition([...scene.position]);
-        setSplatRotation([...scene.rotation]);
-        setSplatScale(scene.scale);
+        setSplatPosition([roundSplatThousandths(scene.position[0]), roundSplatThousandths(scene.position[1]), roundSplatThousandths(scene.position[2])]);
+        setSplatRotation([roundSplatThousandths(scene.rotation[0]), roundSplatThousandths(scene.rotation[1]), roundSplatThousandths(scene.rotation[2])]);
+        setSplatScale(roundSplatThousandths(scene.scale));
         setViewerState("ready");
       }
       if (event.data?.type === "sogs:pickFocus" && event.source === iframeRef.current?.contentWindow) {
@@ -14559,13 +14569,13 @@ function SogsMigratedViewer({
         } else {
           const st = event.data;
           if (Array.isArray(st.position) && st.position.length === 3) {
-            setSplatPosition([st.position[0], st.position[1], st.position[2]]);
+            setSplatPosition([roundSplatThousandths(st.position[0]), roundSplatThousandths(st.position[1]), roundSplatThousandths(st.position[2])]);
           }
           if (Array.isArray(st.rotation) && st.rotation.length === 3) {
-            setSplatRotation([st.rotation[0], st.rotation[1], st.rotation[2]]);
+            setSplatRotation([roundSplatThousandths(st.rotation[0]), roundSplatThousandths(st.rotation[1]), roundSplatThousandths(st.rotation[2])]);
           }
           if (typeof st.scale === "number" && Number.isFinite(st.scale)) {
-            setSplatScale(st.scale);
+            setSplatScale(roundSplatThousandths(st.scale));
           }
         }
       }
@@ -14590,9 +14600,9 @@ function SogsMigratedViewer({
       ignoreNextSogsStateRef.current = true;
       postToWindow(win, {
         type: "sogs:apply",
-        position: [...splatPosition],
-        rotation: [...splatRotation],
-        scale: splatScale,
+        position: [roundSplatThousandths(splatPosition[0]), roundSplatThousandths(splatPosition[1]), roundSplatThousandths(splatPosition[2])],
+        rotation: [roundSplatThousandths(splatRotation[0]), roundSplatThousandths(splatRotation[1]), roundSplatThousandths(splatRotation[2])],
+        scale: roundSplatThousandths(splatScale),
         fov
       });
     }, 350);
@@ -15050,11 +15060,11 @@ function SogsMigratedViewer({
                 {
                   id: "splat-px",
                   type: "number",
-                  step: "any",
+                  step: "0.001",
                   disabled: toggleDisabled,
                   value: splatPosition[0],
                   onChange: (e) => {
-                    const v = parseFloat(e.target.value);
+                    const v = roundSplatThousandths(parseFloat(e.target.value));
                     if (!Number.isFinite(v)) return;
                     setSplatPosition((p) => [v, p[1], p[2]]);
                   }
@@ -15068,11 +15078,11 @@ function SogsMigratedViewer({
                 {
                   id: "splat-py",
                   type: "number",
-                  step: "any",
+                  step: "0.001",
                   disabled: toggleDisabled,
                   value: splatPosition[1],
                   onChange: (e) => {
-                    const v = parseFloat(e.target.value);
+                    const v = roundSplatThousandths(parseFloat(e.target.value));
                     if (!Number.isFinite(v)) return;
                     setSplatPosition((p) => [p[0], v, p[2]]);
                   }
@@ -15086,11 +15096,11 @@ function SogsMigratedViewer({
                 {
                   id: "splat-pz",
                   type: "number",
-                  step: "any",
+                  step: "0.001",
                   disabled: toggleDisabled,
                   value: splatPosition[2],
                   onChange: (e) => {
-                    const v = parseFloat(e.target.value);
+                    const v = roundSplatThousandths(parseFloat(e.target.value));
                     if (!Number.isFinite(v)) return;
                     setSplatPosition((p) => [p[0], p[1], v]);
                   }
@@ -15104,11 +15114,11 @@ function SogsMigratedViewer({
                 {
                   id: "splat-rx",
                   type: "number",
-                  step: "any",
+                  step: "0.001",
                   disabled: toggleDisabled,
                   value: splatRotation[0],
                   onChange: (e) => {
-                    const v = parseFloat(e.target.value);
+                    const v = roundSplatThousandths(parseFloat(e.target.value));
                     if (!Number.isFinite(v)) return;
                     setSplatRotation((r) => [v, r[1], r[2]]);
                   }
@@ -15122,11 +15132,11 @@ function SogsMigratedViewer({
                 {
                   id: "splat-ry",
                   type: "number",
-                  step: "any",
+                  step: "0.001",
                   disabled: toggleDisabled,
                   value: splatRotation[1],
                   onChange: (e) => {
-                    const v = parseFloat(e.target.value);
+                    const v = roundSplatThousandths(parseFloat(e.target.value));
                     if (!Number.isFinite(v)) return;
                     setSplatRotation((r) => [r[0], v, r[2]]);
                   }
@@ -15140,11 +15150,11 @@ function SogsMigratedViewer({
                 {
                   id: "splat-rz",
                   type: "number",
-                  step: "any",
+                  step: "0.001",
                   disabled: toggleDisabled,
                   value: splatRotation[2],
                   onChange: (e) => {
-                    const v = parseFloat(e.target.value);
+                    const v = roundSplatThousandths(parseFloat(e.target.value));
                     if (!Number.isFinite(v)) return;
                     setSplatRotation((r) => [r[0], r[1], v]);
                   }
@@ -15159,11 +15169,11 @@ function SogsMigratedViewer({
                   id: "splat-sc",
                   type: "number",
                   min: "1e-6",
-                  step: "any",
+                  step: "0.001",
                   disabled: toggleDisabled,
                   value: splatScale,
                   onChange: (e) => {
-                    const v = parseFloat(e.target.value);
+                    const v = roundSplatThousandths(parseFloat(e.target.value));
                     if (!Number.isFinite(v) || v <= 0) return;
                     setSplatScale(v);
                   }
@@ -15181,9 +15191,9 @@ function SogsMigratedViewer({
                 onClick: () => {
                   const fov = createDefaultScenePayload().fov;
                   const payload = {
-                    position: [...splatPosition],
-                    rotation: [...splatRotation],
-                    scale: splatScale,
+                    position: [roundSplatThousandths(splatPosition[0]), roundSplatThousandths(splatPosition[1]), roundSplatThousandths(splatPosition[2])],
+                    rotation: [roundSplatThousandths(splatRotation[0]), roundSplatThousandths(splatRotation[1]), roundSplatThousandths(splatRotation[2])],
+                    scale: roundSplatThousandths(splatScale),
                     fov
                   };
                   const text = JSON.stringify(payload, null, 2);
@@ -15209,15 +15219,18 @@ function SogsMigratedViewer({
                 disabled: toggleDisabled,
                 onClick: () => {
                   const d = createDefaultScenePayload();
-                  setSplatPosition([...d.position]);
-                  setSplatRotation([...d.rotation]);
-                  setSplatScale(d.scale);
+                  const pos = [roundSplatThousandths(d.position[0]), roundSplatThousandths(d.position[1]), roundSplatThousandths(d.position[2])];
+                  const rot = [roundSplatThousandths(d.rotation[0]), roundSplatThousandths(d.rotation[1]), roundSplatThousandths(d.rotation[2])];
+                  const sc = roundSplatThousandths(d.scale);
+                  setSplatPosition(pos);
+                  setSplatRotation(rot);
+                  setSplatScale(sc);
                   ignoreNextSogsStateRef.current = true;
                   postToWindow(iframeRef.current?.contentWindow, {
                     type: "sogs:apply",
-                    position: d.position,
-                    rotation: d.rotation,
-                    scale: d.scale,
+                    position: pos,
+                    rotation: rot,
+                    scale: sc,
                     fov: d.fov
                   });
                 },
