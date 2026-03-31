@@ -110,14 +110,22 @@ function clampSogsCameraPosition(cameraManager) {
   const hasR = typeof maxR === "number" && Number.isFinite(maxR) && maxR > 0;
   if (!hasY && !hasR) return false;
   const pos = cameraManager.camera.position;
+  let changed = false;
   for (let i = 0; i < 6; i++) {
-    if (hasY) pos.y = Math.max(pos.y, yMin);
+    if (hasY) {
+      const ny = Math.max(pos.y, yMin);
+      if (ny !== pos.y) changed = true;
+      pos.y = ny;
+    }
     if (hasR) {
       const len = pos.length();
-      if (len > maxR) pos.mulScalar(maxR / len);
+      if (len > maxR && len > 1e-20) {
+        pos.mulScalar(maxR / len);
+        changed = true;
+      }
     }
   }
-  return true;
+  return changed;
 }
 
 function setupCameraManagerBridge(cameraManager) {
@@ -157,7 +165,7 @@ function setupCameraManagerBridge(cameraManager) {
     if (typeof window.__sogsUserFov === "number" && Number.isFinite(window.__sogsUserFov)) {
       cameraManager.camera.fov = window.__sogsUserFov;
     }
-    if (clampSogsCameraPosition(cameraManager)) {
+    if (clampSogsCameraPosition(cameraManager) && typeof cameraManager.syncOrbitFromCurrentCamera === "function") {
       cameraManager.syncOrbitFromCurrentCamera();
     }
     postCameraPoseFromViewer(cameraManager);
