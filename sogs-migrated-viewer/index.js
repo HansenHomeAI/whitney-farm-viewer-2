@@ -14427,6 +14427,17 @@ function SogsMigratedViewer({
   const [showWorldAxes, setShowWorldAxes] = (0, import_react9.useState)(false);
   const [cameraYMin, setCameraYMin] = (0, import_react9.useState)(CANYON_VISTA_CAMERA_WORLD_BOUNDS.yMin);
   const [cameraMaxRadius, setCameraMaxRadius] = (0, import_react9.useState)(CANYON_VISTA_CAMERA_WORLD_BOUNDS.maxRadiusFromOrigin);
+  const cameraBoundsRef = (0, import_react9.useRef)({
+    yMin: CANYON_VISTA_CAMERA_WORLD_BOUNDS.yMin,
+    maxR: CANYON_VISTA_CAMERA_WORLD_BOUNDS.maxRadiusFromOrigin
+  });
+  const showWorldAxesRef = (0, import_react9.useRef)(false);
+  (0, import_react9.useEffect)(() => {
+    cameraBoundsRef.current = { yMin: cameraYMin, maxR: cameraMaxRadius };
+  }, [cameraYMin, cameraMaxRadius]);
+  (0, import_react9.useEffect)(() => {
+    showWorldAxesRef.current = showWorldAxes;
+  }, [showWorldAxes]);
   const [detailsOpen, setDetailsOpen] = (0, import_react9.useState)(false);
   const [revealDone, setRevealDone] = (0, import_react9.useState)(false);
   const introPathPlayedRef = (0, import_react9.useRef)(false);
@@ -14544,6 +14555,16 @@ function SogsMigratedViewer({
             "*"
           );
           event.source.postMessage({ type: "sogs:cameraMode", mode: "free" }, "*");
+          const b = cameraBoundsRef.current;
+          event.source.postMessage(
+            {
+              type: "sogs:cameraBounds",
+              yMin: roundSplatThousandths(b.yMin),
+              maxRadiusFromOrigin: roundSplatThousandths(b.maxR)
+            },
+            "*"
+          );
+          event.source.postMessage({ type: "sogs:worldGuides", enabled: showWorldAxesRef.current }, "*");
         } catch {
         }
         poseRef.current = {
