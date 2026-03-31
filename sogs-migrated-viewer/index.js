@@ -7296,6 +7296,16 @@ function createDefaultScenePayload() {
     fov: SOGS_DEFAULT_SCENE.fov
   };
 }
+function getSogsDeveloperToolsEnabled() {
+  if (typeof window === "undefined") return false;
+  try {
+    const q = new URLSearchParams(window.location.search).get("dev");
+    if (q === "1" || q === "true") return true;
+    if (q === "0" || q === "false") return false;
+  } catch {
+  }
+  return false;
+}
 
 // lib/sogsViewerBundle.ts
 var PROXY_HOSTS = /* @__PURE__ */ new Set([
@@ -14458,6 +14468,7 @@ function SogsMigratedViewer({
     orbitFocusRef.current = { x: t.x, y: t.y, z: t.z };
   }, [activeHoleView]);
   const [pickFeedbackScreen, setPickFeedbackScreen] = (0, import_react9.useState)(null);
+  const [developerToolsEnabled] = (0, import_react9.useState)(getSogsDeveloperToolsEnabled);
   const bumpPath = (0, import_react9.useCallback)(() => setPathVersion((v) => v + 1), []);
   (0, import_react9.useEffect)(() => {
     pathPlayingRef.current = pathPlaying;
@@ -14913,7 +14924,7 @@ function SogsMigratedViewer({
         "aria-hidden": true
       }
     ) : null,
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "editor-toggles-wrap", id: "editorTogglesWrap", children: [
+    developerToolsEnabled ? /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "editor-toggles-wrap", id: "editorTogglesWrap", children: [
       /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "animation-editor-toggle-wrap", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
         "button",
         {
@@ -15106,8 +15117,8 @@ function SogsMigratedViewer({
           }
         )
       ] })
-    ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+    ] }) : null,
+    developerToolsEnabled ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
       AnimationPathPanel,
       {
         open: pathPanelOpen,
@@ -15122,8 +15133,8 @@ function SogsMigratedViewer({
         onStopTour,
         pathPlaying
       }
-    ),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+    ) : null,
+    developerToolsEnabled ? /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
       "div",
       {
         id: "splatAlignPanel",
@@ -15431,7 +15442,7 @@ function SogsMigratedViewer({
           splatCopyFeedback ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "animation-path-copy-feedback", children: splatCopyFeedback }) : null
         ]
       }
-    ),
+    ) : null,
     /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "menu-container", id: "menuContainer", children: [
       /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
         CanyonDetailsMenuButton,
