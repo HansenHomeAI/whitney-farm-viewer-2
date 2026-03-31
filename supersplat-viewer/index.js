@@ -101133,6 +101133,22 @@ class CameraManager {
             controllers.orbit.goto(tmpCamera);
             this._pickFocusWorld.set(worldPos.x, worldPos.y, worldPos.z);
             this._pickFocusFramesLeft = 75;
+            if (payload && typeof payload.clientX === 'number' && typeof payload.clientY === 'number' && window.parent) {
+                try {
+                    window.parent.postMessage({
+                        type: 'sogs:pickFocus',
+                        world: [
+                            worldPos.x,
+                            worldPos.y,
+                            worldPos.z
+                        ],
+                        clientX: payload.clientX,
+                        clientY: payload.clientY,
+                        ringSeq: this._pickFocusRingSeq,
+                        ringT: this._pickFocusRingT
+                    }, '*');
+                } catch (e) {}
+            }
         });
         events.on('annotation.activate', (annotation) => {
             // switch to orbit camera on pick
