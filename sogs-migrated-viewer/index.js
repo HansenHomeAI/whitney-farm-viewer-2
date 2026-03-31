@@ -7395,7 +7395,7 @@ var CANYON_VISTA_DEFAULT_PATH_CHECKPOINTS = [
 ];
 var CANYON_VISTA_CAMERA_START_Y = 0.55;
 var CANYON_VISTA_CAMERA_WORLD_BOUNDS = {
-  yMin: -1,
+  yMin: 0,
   maxRadiusFromOrigin: 1
 };
 
