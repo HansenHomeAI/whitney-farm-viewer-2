@@ -13,8 +13,12 @@ const tmpTo = new Vec3();
 const tmpFocus = new Vec3();
 
 const AXIS_LEN = 45;
-/** Cylinder radius for RGB axis guides (world + splat-local); keep very thin so reads as line-like. */
-const AXIS_RADIUS = 0.0028;
+/**
+ * Cylinder radius for RGB axis guides (world + splat-local).
+ * Original was 0.28; 0.0028 (÷100) was too thin to see at scene scale (sub-pixel / lost in depth).
+ * ~0.028 is ~10× thinner than original but still reads as a thin line in the viewer.
+ */
+const AXIS_RADIUS = 0.028;
 
 window.firstFrame = function sogsFirstFrameHook() {
   window.parent.postMessage({ type: "supersplat:firstFrame" }, "*");
@@ -139,6 +143,9 @@ function axisMaterial(rgb) {
   m.emissive = new Color(rgb[0], rgb[1], rgb[2]);
   m.emissiveIntensity = 1;
   m.useLighting = false;
+  /** Draw through splat/geometry so alignment axes stay visible at the origin. */
+  m.depthTest = false;
+  m.depthWrite = false;
   return m;
 }
 
@@ -153,17 +160,30 @@ function copyRenderLayers(fromEntity, toEntity) {
   }
 }
 
+/** gsplat often has no `render`; fall back to the main camera entity so axes land on the same layers. */
+function layerSourceForAxes(app) {
+  const g = app.root.findByName("gsplat");
+  if (g?.render?.layers?.length) {
+    return g;
+  }
+  const cam = app.root.findByName("camera");
+  if (cam?.render?.layers?.length) {
+    return cam;
+  }
+  return g;
+}
+
 /**
  * Thin cylinders along local +X / +Y / +Z at the splat origin, parented to gsplat.
  * Renders in the normal forward pass (depth-tested), not as immediate drawLine overlay.
  */
-function buildAxisCylinderMesh(app) {
+function buildAxisCylinderMesh(app, radius = AXIS_RADIUS) {
   const device = app.graphicsDevice;
   const geom = new CylinderGeometry({
     height: AXIS_LEN,
-    radius: AXIS_RADIUS,
+    radius,
     heightSegments: 1,
-    capSegments: 18,
+    capSegments: 12,
   });
   return Mesh.fromGeometry(device, geom);
 }
@@ -195,6 +215,7 @@ function setupSogsAxesGuides(app, gsplatEntity) {
     ent.setLocalEulerAngles(c.ex, c.ey, c.ez);
     ent.setLocalPosition(c.px, c.py, c.pz);
     const mi = new MeshInstance(mesh, mat, ent);
+    mi.drawOrder = 0xffffff;
     ent.addComponent("render", {
       meshInstances: [mi],
       castShadows: false,
@@ -233,6 +254,7 @@ function setupWorldAxesGuides(app, layerSourceEntity) {
     ent.setLocalEulerAngles(c.ex, c.ey, c.ez);
     ent.setLocalPosition(c.px, c.py, c.pz);
     const mi = new MeshInstance(mesh, mat, ent);
+    mi.drawOrder = 0xffffff;
     ent.addComponent("render", {
       meshInstances: [mi],
       castShadows: false,
@@ -251,8 +273,9 @@ function syncWorldAxesGuides(app) {
   if (!g) {
     return;
   }
+  const layerSource = layerSourceForAxes(app);
   if (window.__sogsWorldGuidesEnabled && !window.__sogsWorldAxesRoot) {
-    setupWorldAxesGuides(app, g);
+    setupWorldAxesGuides(app, layerSource);
   }
   if (window.__sogsWorldAxesRoot) {
     window.__sogsWorldAxesRoot.enabled = !!window.__sogsWorldGuidesEnabled;
