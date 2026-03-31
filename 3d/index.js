@@ -7313,7 +7313,7 @@ var PROXY_HOSTS = /* @__PURE__ */ new Set([
   "spaceport-ml-processing.s3.us-west-2.amazonaws.com"
 ]);
 var DEFAULT_SOGS_BUNDLE_URL = "https://spaceport-ml-processing.s3.amazonaws.com/compressed/edited-splat-20260330-browser/supersplat_bundle/meta.json";
-var MOBILE_BOOT_TIMEOUT_MS = 8e3;
+var MOBILE_BOOT_TIMEOUT_MS = 6e3;
 function shouldUseMobileBootFallback() {
   if (typeof window === "undefined") return false;
   try {

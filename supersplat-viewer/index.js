@@ -102462,7 +102462,20 @@ const main = (app, camera, settingsJson, config) => {
         });
     }
     // Create the viewer
-    return new Viewer(global, gsplatLoad, skyboxLoad);
+    const viewer = new Viewer(global, gsplatLoad, skyboxLoad);
+    if (config.deferredSkyboxUrl) {
+        events.once('firstFrame', () => {
+            window.setTimeout(() => {
+                loadSkybox(app, config.deferredSkyboxUrl).then((asset) => {
+                    app.scene.envAtlas = asset.resource;
+                    app.renderNextFrame = true;
+                }).catch((err) => {
+                    console.warn('Deferred skybox failed', err);
+                });
+            }, 500);
+        });
+    }
+    return viewer;
 };
 
 window.__sogsPc = { Entity, Mesh, MeshInstance, StandardMaterial, Color, CylinderGeometry, Vec3 };
