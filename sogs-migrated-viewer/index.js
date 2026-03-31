@@ -14297,7 +14297,7 @@ function TapPickFeedback({ screen, durationMs = 720 }) {
     setVisible(true);
     const t = window.setTimeout(() => setVisible(false), durationMs);
     return () => clearTimeout(t);
-  }, [screen, durationMs]);
+  }, [screen?.t, durationMs]);
   if (!screen || !visible) {
     return null;
   }

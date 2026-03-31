@@ -101126,9 +101126,9 @@ class CameraManager {
             const cam = this.camera;
             tmpCamera.copy(cam);
             tmpCamera.look(cam.position, worldPos);
-            controllers.orbit.goto(tmpCamera);
+            controllers.orbit.goto(tmpCamera, false);
             this._pickFocusWorld.set(worldPos.x, worldPos.y, worldPos.z);
-            this._pickFocusFramesLeft = 90;
+            this._pickFocusFramesLeft = 2;
         });
         events.on('annotation.activate', (annotation) => {
             // switch to orbit camera on pick
@@ -101155,6 +101155,7 @@ class CameraManager {
         if (!screen || !isFinite(screen.x) || !isFinite(screen.y)) {
             return;
         }
+        this._pickFocusFramesLeft = 0;
         try {
             if (window.parent) {
                 window.parent.postMessage({
