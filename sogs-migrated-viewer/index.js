@@ -14463,6 +14463,7 @@ function SogsMigratedViewer({
         const t = hv.target;
         const sp = hv.startPosition;
         try {
+          ignoreNextSogsStateRef.current = true;
           event.source.postMessage(
             {
               type: "sogs:apply",
@@ -14586,6 +14587,7 @@ function SogsMigratedViewer({
     if (!win) return;
     const fov = createDefaultScenePayload().fov;
     const id = window.setTimeout(() => {
+      ignoreNextSogsStateRef.current = true;
       postToWindow(win, {
         type: "sogs:apply",
         position: [...splatPosition],
@@ -15210,6 +15212,7 @@ function SogsMigratedViewer({
                   setSplatPosition([...d.position]);
                   setSplatRotation([...d.rotation]);
                   setSplatScale(d.scale);
+                  ignoreNextSogsStateRef.current = true;
                   postToWindow(iframeRef.current?.contentWindow, {
                     type: "sogs:apply",
                     position: d.position,
