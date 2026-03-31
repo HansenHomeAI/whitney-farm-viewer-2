@@ -15130,7 +15130,7 @@ function SogsMigratedViewer({
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-title", children: "Splat align" }),
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", className: "animation-editor-close", "aria-label": "Close", onClick: () => setSplatAlignOpen(false), children: "\xD7" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-status animation-editor-status-compact", children: toggleDisabled ? "Loading\u2026" : "Values apply to the viewer as you edit. Copy JSON to update SOGS default scene in code." }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-status animation-editor-status-compact", children: toggleDisabled ? "Loading\u2026" : "Values apply to the viewer as you edit. Copy includes scene pose, camera bounds, and world axes." }),
           /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "animation-path-toggles-row", children: [
             /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("label", { className: "animation-path-inline-label", children: [
               /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
@@ -15372,7 +15372,12 @@ function SogsMigratedViewer({
                     position: [roundSplatThousandths(splatPosition[0]), roundSplatThousandths(splatPosition[1]), roundSplatThousandths(splatPosition[2])],
                     rotation: [roundSplatThousandths(splatRotation[0]), roundSplatThousandths(splatRotation[1]), roundSplatThousandths(splatRotation[2])],
                     scale: roundSplatThousandths(splatScale),
-                    fov
+                    fov,
+                    worldAxes: showWorldAxes,
+                    cameraBounds: {
+                      yMin: roundSplatThousandths(cameraYMin),
+                      maxRadiusFromOrigin: roundSplatThousandths(cameraMaxRadius)
+                    }
                   };
                   const text = JSON.stringify(payload, null, 2);
                   void navigator.clipboard.writeText(text).then(
@@ -15386,7 +15391,7 @@ function SogsMigratedViewer({
                     }
                   );
                 },
-                children: "Copy scene JSON"
+                children: "Copy splat align JSON"
               }
             ),
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
