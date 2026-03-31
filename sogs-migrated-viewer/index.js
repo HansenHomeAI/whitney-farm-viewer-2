@@ -7907,7 +7907,7 @@ function AnimationPathPanel({
 // components/sogs-migrated-viewer/CanyonCompass.tsx
 var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
 var COMPASS_OUTLINE = "https://raw.githubusercontent.com/HansenHomeAI/FigmaSVGButtons/main/NorthOutline.svg";
-var COMPASS_ICON_FIXED_ROTATION_DEG = 30;
+var COMPASS_ICON_FIXED_ROTATION_DEG = 40;
 function CanyonCompass({ rotationDeg, onClick, ariaLabel = "Face north" }) {
   return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", id: "compassButton", className: "menu-button", onClick, "aria-label": ariaLabel, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
     "img",
