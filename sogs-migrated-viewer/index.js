@@ -14375,7 +14375,7 @@ function SogsMigratedViewer({
   const [viewerState, setViewerState] = (0, import_react9.useState)("idle");
   const [pathPlaying, setPathPlaying] = (0, import_react9.useState)(false);
   const [autoRotate, setAutoRotate] = (0, import_react9.useState)(CANYON_VISTA_ORBIT.autoRotateDefault);
-  const [showTapDots, setShowTapDots] = (0, import_react9.useState)(true);
+  const [showTapDots, setShowTapDots] = (0, import_react9.useState)(false);
   const [showLotLines, setShowLotLines] = (0, import_react9.useState)(false);
   const [showSoldLabels, setShowSoldLabels] = (0, import_react9.useState)(false);
   const [pathVersion, setPathVersion] = (0, import_react9.useState)(0);
