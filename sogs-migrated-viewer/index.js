@@ -14969,4 +14969,3 @@ if (!mountNode) {
   throw new Error("Missing #root mount for Whitney Farm Viewer 2.");
 }
 (0, import_client.createRoot)(mountNode).render(/* @__PURE__ */ (0, import_jsx_runtime12.jsx)(SogsMigratedViewer, {}));
-//# sourceMappingURL=index.js.map

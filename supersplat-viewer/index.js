@@ -102441,4 +102441,3 @@ const main = (app, camera, settingsJson, config) => {
 };
 
 export { main };
-//# sourceMappingURL=index.js.map
