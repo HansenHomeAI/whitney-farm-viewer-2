@@ -7321,7 +7321,15 @@ function shouldUseMobileBootFallback() {
   } catch {
   }
   try {
-    if (typeof navigator !== "undefined" && navigator.maxTouchPoints > 1) return true;
+    if (typeof navigator !== "undefined") {
+      if (navigator.userAgentData?.mobile) return true;
+      if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "")) return true;
+      if (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024) return true;
+    }
+  } catch {
+  }
+  try {
+    if (window.matchMedia?.("(hover: none)").matches && window.innerWidth <= 1024) return true;
   } catch {
   }
   return false;
@@ -14529,7 +14537,7 @@ function SogsMigratedViewer({
   const attemptLoad = (0, import_react9.useCallback)(
     (rawValue, options = {}) => {
       lastRequestedUrlRef.current = rawValue;
-      const nextBootMode = options.bootMode === "mobile-fallback" ? "mobile-fallback" : "default";
+      const nextBootMode = options.bootMode === "mobile-fallback" || options.bootMode == null && mobileBootFallbackEnabled ? "mobile-fallback" : "default";
       if (options.resetFallback !== false && nextBootMode === "default") {
         fallbackAttemptedRef.current = false;
       }
