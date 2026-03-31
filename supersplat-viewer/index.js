@@ -101000,6 +101000,8 @@ class CameraManager {
         this._global = global;
         this._pickFocusWorld = new Vec3();
         this._pickFocusFramesLeft = 0;
+        this._pickFocusRingSeq = 0;
+        this._pickFocusRingT = 0;
         const { events, settings, state } = global;
         const camera0 = settings.cameras[0].initial;
         const frameCamera = createFrameCamera(bbox, camera0.fov);
@@ -101126,9 +101128,11 @@ class CameraManager {
             const cam = this.camera;
             tmpCamera.copy(cam);
             tmpCamera.look(cam.position, worldPos);
-            controllers.orbit.goto(tmpCamera, false);
+            this._pickFocusRingSeq++;
+            this._pickFocusRingT = Date.now();
+            controllers.orbit.goto(tmpCamera);
             this._pickFocusWorld.set(worldPos.x, worldPos.y, worldPos.z);
-            this._pickFocusFramesLeft = 2;
+            this._pickFocusFramesLeft = 75;
         });
         events.on('annotation.activate', (annotation) => {
             // switch to orbit camera on pick
@@ -101155,7 +101159,6 @@ class CameraManager {
         if (!screen || !isFinite(screen.x) || !isFinite(screen.y)) {
             return;
         }
-        this._pickFocusFramesLeft = 0;
         try {
             if (window.parent) {
                 window.parent.postMessage({
@@ -101166,7 +101169,9 @@ class CameraManager {
                         worldPos.z
                     ],
                     clientX: screen.x,
-                    clientY: screen.y
+                    clientY: screen.y,
+                    ringSeq: this._pickFocusRingSeq,
+                    ringT: this._pickFocusRingT
                 }, '*');
             }
         } catch (e) {}

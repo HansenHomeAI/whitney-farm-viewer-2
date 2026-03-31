@@ -14594,16 +14594,22 @@ function SogsMigratedViewer({
         }
         if (typeof d.clientX === "number" && typeof d.clientY === "number") {
           const iframeEl = iframeRef.current;
-          if (iframeEl) {
-            const r = iframeEl.getBoundingClientRect();
-            setPickFeedbackScreen({
-              x: r.left + d.clientX,
-              y: r.top + d.clientY,
-              t: Date.now()
-            });
-          } else {
-            setPickFeedbackScreen({ x: d.clientX, y: d.clientY, t: Date.now() });
-          }
+          const r = iframeEl ? iframeEl.getBoundingClientRect() : { left: 0, top: 0 };
+          const x = r.left + d.clientX;
+          const y = r.top + d.clientY;
+          const ringSeq = typeof d.ringSeq === "number" ? d.ringSeq : null;
+          const ringT = typeof d.ringT === "number" ? d.ringT : Date.now();
+          setPickFeedbackScreen((prev) => {
+            if (ringSeq !== null && prev && prev.ringSeq === ringSeq) {
+              return { ...prev, x, y };
+            }
+            return {
+              x,
+              y,
+              t: ringT,
+              ringSeq: ringSeq ?? ringT
+            };
+          });
         }
       }
       if (event.data?.type === "sogs:userInteraction" && event.source === iframeRef.current?.contentWindow) {
