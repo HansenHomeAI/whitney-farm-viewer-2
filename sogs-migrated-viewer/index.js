@@ -7394,6 +7394,10 @@ var CANYON_VISTA_DEFAULT_PATH_CHECKPOINTS = [
   { position: { x: 1.917807, y: 0.84939, z: 2.072994 }, lookAt: { x: 0.077108, y: -0.104422, z: -0.347646 }, duration: 5 }
 ];
 var CANYON_VISTA_CAMERA_START_Y = 0.55;
+var CANYON_VISTA_CAMERA_WORLD_BOUNDS = {
+  yMin: -10,
+  maxRadiusFromOrigin: 200
+};
 
 // lib/canyon-vista/canyonVistaOverlays.ts
 var CANYON_VISTA_REMOTE_BASE = "https://raw.githubusercontent.com/HansenHomeAI/Canyon-Vista/main";
@@ -14377,6 +14381,8 @@ function SogsMigratedViewer({
   const [splatScale, setSplatScale] = (0, import_react9.useState)(() => roundSplatThousandths(createDefaultScenePayload().scale));
   const [splatCopyFeedback, setSplatCopyFeedback] = (0, import_react9.useState)(null);
   const [showWorldAxes, setShowWorldAxes] = (0, import_react9.useState)(false);
+  const [cameraYMin, setCameraYMin] = (0, import_react9.useState)(CANYON_VISTA_CAMERA_WORLD_BOUNDS.yMin);
+  const [cameraMaxRadius, setCameraMaxRadius] = (0, import_react9.useState)(CANYON_VISTA_CAMERA_WORLD_BOUNDS.maxRadiusFromOrigin);
   const [detailsOpen, setDetailsOpen] = (0, import_react9.useState)(false);
   const [revealDone, setRevealDone] = (0, import_react9.useState)(false);
   const introPathPlayedRef = (0, import_react9.useRef)(false);
@@ -14587,6 +14593,16 @@ function SogsMigratedViewer({
     if (viewerState !== "ready") return;
     postToWindow(iframeRef.current?.contentWindow, { type: "sogs:worldGuides", enabled: showWorldAxes });
   }, [showWorldAxes, viewerState]);
+  (0, import_react9.useEffect)(() => {
+    if (viewerState !== "ready") return;
+    const yMin = roundSplatThousandths(cameraYMin);
+    const maxR = roundSplatThousandths(cameraMaxRadius);
+    postToWindow(iframeRef.current?.contentWindow, {
+      type: "sogs:cameraBounds",
+      yMin,
+      maxRadiusFromOrigin: maxR
+    });
+  }, [viewerState, cameraYMin, cameraMaxRadius]);
   (0, import_react9.useEffect)(() => {
     if (viewerState !== "ready" || !splatAlignOpen) return;
     postToWindow(iframeRef.current?.contentWindow, { type: "sogs:requestState" });
@@ -15050,6 +15066,43 @@ function SogsMigratedViewer({
                 }
               ),
               "World axes (RGB XYZ at 0,0,0)"
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "animation-path-toggles-row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("label", { className: "animation-path-inline-label", children: [
+              "Camera min Y",
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  type: "number",
+                  step: "0.001",
+                  disabled: toggleDisabled,
+                  value: cameraYMin,
+                  onChange: (e) => {
+                    const v = roundSplatThousandths(parseFloat(e.target.value));
+                    if (!Number.isFinite(v)) return;
+                    setCameraYMin(v);
+                  }
+                }
+              )
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("label", { className: "animation-path-inline-label animation-path-speed", children: [
+              "Max radius",
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  type: "number",
+                  min: "0.001",
+                  step: "0.001",
+                  disabled: toggleDisabled,
+                  value: cameraMaxRadius,
+                  onChange: (e) => {
+                    const v = roundSplatThousandths(parseFloat(e.target.value));
+                    if (!Number.isFinite(v) || v <= 0) return;
+                    setCameraMaxRadius(v);
+                  }
+                }
+              )
             ] })
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-grid splat-align-grid", children: [

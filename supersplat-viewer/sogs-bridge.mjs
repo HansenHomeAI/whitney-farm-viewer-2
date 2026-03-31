@@ -99,6 +99,27 @@ function postCameraPoseFromViewer(cameraManager) {
   }
 }
 
+/**
+ * Keeps the camera eye (logical `Camera.position`) above a world Y floor and/or inside a sphere around origin.
+ * Iterates so Y and radius limits can both apply without fighting.
+ */
+function clampSogsCameraPosition(cameraManager) {
+  const yMin = window.__sogsCameraYMin;
+  const maxR = window.__sogsCameraMaxRadius;
+  const hasY = typeof yMin === "number" && Number.isFinite(yMin);
+  const hasR = typeof maxR === "number" && Number.isFinite(maxR) && maxR > 0;
+  if (!hasY && !hasR) return false;
+  const pos = cameraManager.camera.position;
+  for (let i = 0; i < 6; i++) {
+    if (hasY) pos.y = Math.max(pos.y, yMin);
+    if (hasR) {
+      const len = pos.length();
+      if (len > maxR) pos.mulScalar(maxR / len);
+    }
+  }
+  return true;
+}
+
 function setupCameraManagerBridge(cameraManager) {
   const origUpdate = cameraManager.update.bind(cameraManager);
   let prevScripted = false;
@@ -115,6 +136,7 @@ function setupCameraManagerBridge(cameraManager) {
           window.__sogsUserFov = pose.fov;
         }
       }
+      clampSogsCameraPosition(cameraManager);
       flushSogsAccumulatedInputFrame(frame);
       prevScripted = true;
       return;
@@ -134,6 +156,9 @@ function setupCameraManagerBridge(cameraManager) {
     }
     if (typeof window.__sogsUserFov === "number" && Number.isFinite(window.__sogsUserFov)) {
       cameraManager.camera.fov = window.__sogsUserFov;
+    }
+    if (clampSogsCameraPosition(cameraManager)) {
+      cameraManager.syncOrbitFromCurrentCamera();
     }
     postCameraPoseFromViewer(cameraManager);
   };
@@ -379,6 +404,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (d.type === "sogs:cameraMode") {
       const scripted = d.mode === "scripted" || d.scripted === true;
       window.__sogsScriptedCamera = !!scripted;
+      app.renderNextFrame = true;
+    }
+    if (d.type === "sogs:cameraBounds") {
+      window.__sogsCameraYMin =
+        typeof d.yMin === "number" && Number.isFinite(d.yMin) ? d.yMin : null;
+      window.__sogsCameraMaxRadius =
+        typeof d.maxRadiusFromOrigin === "number" && Number.isFinite(d.maxRadiusFromOrigin) && d.maxRadiusFromOrigin > 0
+          ? d.maxRadiusFromOrigin
+          : null;
       app.renderNextFrame = true;
     }
   });
