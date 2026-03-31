@@ -1,16 +1,10 @@
 /**
  * Spaceport SOGS bridge: postMessage API for parent page + optional RGB world axes (mesh, not drawLine overlay).
+ * Uses PlayCanvas classes from the bundled viewer (`window.__sogsPc`), not a separate esm.sh build.
  */
 import { main } from "./index.js";
-import {
-  Color,
-  CylinderGeometry,
-  Entity,
-  Mesh,
-  MeshInstance,
-  StandardMaterial,
-  Vec3,
-} from "https://esm.sh/playcanvas@2.13.2";
+
+const { Color, CylinderGeometry, Entity, Mesh, MeshInstance, StandardMaterial, Vec3 } = window.__sogsPc;
 
 /** Parent-driven camera (position + look-at). When `sogs:cameraMode` is `scripted`, orbit input is skipped. */
 const tmpFrom = new Vec3();
@@ -162,6 +156,23 @@ function copyRenderLayers(fromEntity, toEntity) {
  * Thin cylinders along local +X / +Y / +Z at the splat origin, parented to gsplat.
  * Renders in the normal forward pass (depth-tested), not as immediate drawLine overlay.
  */
+function buildAxisCylinderMesh(app) {
+  const device = app.graphicsDevice;
+  const geom = new CylinderGeometry({
+    height: AXIS_LEN,
+    radius: AXIS_RADIUS,
+    heightSegments: 1,
+    capSegments: 18,
+  });
+  return Mesh.fromGeometry(device, geom);
+}
+
+const AXIS_CONFIGS = [
+  { name: "sogsAxisX", ex: 0, ey: 0, ez: -90, px: AXIS_LEN / 2, py: 0, pz: 0, rgb: [0.95, 0.22, 0.18] },
+  { name: "sogsAxisY", ex: 0, ey: 0, ez: 0, px: 0, py: AXIS_LEN / 2, pz: 0, rgb: [0.28, 0.92, 0.32] },
+  { name: "sogsAxisZ", ex: 90, ey: 0, ez: 0, px: 0, py: 0, pz: AXIS_LEN / 2, rgb: [0.32, 0.52, 0.98] },
+];
+
 function setupSogsAxesGuides(app, gsplatEntity) {
   if (window.__sogsAxesRoot) {
     try {
@@ -172,27 +183,14 @@ function setupSogsAxesGuides(app, gsplatEntity) {
     window.__sogsAxesRoot = null;
   }
 
-  const device = app.graphicsDevice;
-  const geom = new CylinderGeometry({
-    height: AXIS_LEN,
-    radius: AXIS_RADIUS,
-    heightSegments: 1,
-    capSegments: 18,
-  });
-  const mesh = Mesh.fromGeometry(device, geom);
+  const mesh = buildAxisCylinderMesh(app);
 
-  const root = new Entity("sogsAxes");
+  const root = new Entity("sogsAxes", app);
   gsplatEntity.addChild(root);
 
-  const configs = [
-    { name: "sogsAxisX", ex: 0, ey: 0, ez: -90, px: AXIS_LEN / 2, py: 0, pz: 0, rgb: [0.95, 0.22, 0.18] },
-    { name: "sogsAxisY", ex: 0, ey: 0, ez: 0, px: 0, py: AXIS_LEN / 2, pz: 0, rgb: [0.28, 0.92, 0.32] },
-    { name: "sogsAxisZ", ex: 90, ey: 0, ez: 0, px: 0, py: 0, pz: AXIS_LEN / 2, rgb: [0.32, 0.52, 0.98] },
-  ];
-
-  for (const c of configs) {
+  for (const c of AXIS_CONFIGS) {
     const mat = axisMaterial(c.rgb);
-    const ent = new Entity(c.name);
+    const ent = new Entity(c.name, app);
     ent.setLocalEulerAngles(c.ex, c.ey, c.ez);
     ent.setLocalPosition(c.px, c.py, c.pz);
     const mi = new MeshInstance(mesh, mat, ent);
@@ -207,6 +205,58 @@ function setupSogsAxesGuides(app, gsplatEntity) {
 
   window.__sogsAxesRoot = root;
   root.enabled = !!window.__sogsGuidesEnabled;
+}
+
+/**
+ * RGB XYZ cylinders at world origin (0,0,0), identity rotation — true world +X/+Y/+Z, independent of gsplat transform.
+ */
+function setupWorldAxesGuides(app, layerSourceEntity) {
+  if (window.__sogsWorldAxesRoot) {
+    try {
+      window.__sogsWorldAxesRoot.destroy();
+    } catch {
+      /* ignore */
+    }
+    window.__sogsWorldAxesRoot = null;
+  }
+
+  const mesh = buildAxisCylinderMesh(app);
+  const root = new Entity("sogsWorldAxes", app);
+  root.setLocalPosition(0, 0, 0);
+  root.setLocalEulerAngles(0, 0, 0);
+  app.root.addChild(root);
+
+  for (const c of AXIS_CONFIGS) {
+    const mat = axisMaterial(c.rgb);
+    const ent = new Entity(`${c.name}World`, app);
+    ent.setLocalEulerAngles(c.ex, c.ey, c.ez);
+    ent.setLocalPosition(c.px, c.py, c.pz);
+    const mi = new MeshInstance(mesh, mat, ent);
+    ent.addComponent("render", {
+      meshInstances: [mi],
+      castShadows: false,
+      receiveShadows: false,
+    });
+    copyRenderLayers(layerSourceEntity, ent);
+    root.addChild(ent);
+  }
+
+  window.__sogsWorldAxesRoot = root;
+  root.enabled = !!window.__sogsWorldGuidesEnabled;
+}
+
+function syncWorldAxesGuides(app) {
+  const g = app.root.findByName("gsplat");
+  if (!g) {
+    return;
+  }
+  if (window.__sogsWorldGuidesEnabled && !window.__sogsWorldAxesRoot) {
+    setupWorldAxesGuides(app, g);
+  }
+  if (window.__sogsWorldAxesRoot) {
+    window.__sogsWorldAxesRoot.enabled = !!window.__sogsWorldGuidesEnabled;
+  }
+  app.renderNextFrame = true;
 }
 
 function syncSogsAxesGuides(app) {
@@ -301,6 +351,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (d.type === "sogs:guides") {
       window.__sogsGuidesEnabled = !!d.enabled;
       syncSogsAxesGuides(app);
+    }
+    if (d.type === "sogs:worldGuides") {
+      window.__sogsWorldGuidesEnabled = !!d.enabled;
+      syncWorldAxesGuides(app);
     }
     if (d.type === "sogs:requestState") {
       postSogsState();

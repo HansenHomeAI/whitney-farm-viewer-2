@@ -8023,9 +8023,9 @@ function CanyonDetailsPanel({ open, onClose }) {
                 children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("img", { src: fullscreen ? MINIMIZE_ICON : FULLSCREEN_ICON, alt: "", draggable: false, width: 21, height: 21 })
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("h1", { id: "canyon-details-heading", children: "Canyon Vista" }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { children: "Canyon Vista is a contemporary apartment community in Draper, Utah, just south of Sandy at the Point of the Mountain. Positioned for quick access to I-15, nearby TRAX, and the Silicon Slopes corridor, the property combines commuter convenience with Wasatch mountain views and a more residential setting. The community is centered on everyday livability, with modern interiors, in-home laundry, a resort-style pool and spa, fitness and yoga spaces, pickleball, play areas, and shared lounge amenities that support both workday routine and weekend downtime." }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { className: "legal-disclaimer", children: "Information and imagery are representative; amenities, finishes, and availability may vary. Not an offer to lease or sell; see leasing office for current terms." })
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("h1", { id: "canyon-details-heading", children: "Whitney Farm" }),
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { children: "Whitney Farm offers a rare opportunity to own a substantial and self-contained Georgia farm with room to breathe. Encompassing approximately 225± acres of mixed woodland and open pasture, the property is anchored by a well-positioned residence that serves as a natural hub for the land surrounding it." }),
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { className: "legal-disclaimer", children: "Information and imagery are representative; property details may vary. Not an offer to sell; consult listing agent for current terms." })
           ] })
         }
       )
@@ -14381,6 +14381,11 @@ function SogsMigratedViewer({
   const [pathVersion, setPathVersion] = (0, import_react9.useState)(0);
   const [photoDot, setPhotoDot] = (0, import_react9.useState)(null);
   const [pathPanelOpen, setPathPanelOpen] = (0, import_react9.useState)(false);
+  const [splatAlignOpen, setSplatAlignOpen] = (0, import_react9.useState)(false);
+  const [splatPosition, setSplatPosition] = (0, import_react9.useState)(() => [...createDefaultScenePayload().position]);
+  const [splatRotation, setSplatRotation] = (0, import_react9.useState)(() => [...createDefaultScenePayload().rotation]);
+  const [splatScale, setSplatScale] = (0, import_react9.useState)(() => createDefaultScenePayload().scale);
+  const [showWorldAxes, setShowWorldAxes] = (0, import_react9.useState)(false);
   const [detailsOpen, setDetailsOpen] = (0, import_react9.useState)(false);
   const [revealDone, setRevealDone] = (0, import_react9.useState)(false);
   const introPathPlayedRef = (0, import_react9.useRef)(false);
@@ -14506,6 +14511,9 @@ function SogsMigratedViewer({
         };
         orbitFocusRef.current = { x: t.x, y: t.y, z: t.z };
         lastScriptedRef.current = false;
+        setSplatPosition([...scene.position]);
+        setSplatRotation([...scene.rotation]);
+        setSplatScale(scene.scale);
         setViewerState("ready");
       }
       if (event.data?.type === "sogs:pickFocus" && event.source === iframeRef.current?.contentWindow) {
@@ -14566,12 +14574,31 @@ function SogsMigratedViewer({
       if (event.data?.type === "sogs:state" && event.source === iframeRef.current?.contentWindow) {
         if (ignoreNextSogsStateRef.current) {
           ignoreNextSogsStateRef.current = false;
+        } else {
+          const st = event.data;
+          if (Array.isArray(st.position) && st.position.length === 3) {
+            setSplatPosition([st.position[0], st.position[1], st.position[2]]);
+          }
+          if (Array.isArray(st.rotation) && st.rotation.length === 3) {
+            setSplatRotation([st.rotation[0], st.rotation[1], st.rotation[2]]);
+          }
+          if (typeof st.scale === "number" && Number.isFinite(st.scale)) {
+            setSplatScale(st.scale);
+          }
         }
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, []);
+  (0, import_react9.useEffect)(() => {
+    if (viewerState !== "ready") return;
+    postToWindow(iframeRef.current?.contentWindow, { type: "sogs:worldGuides", enabled: showWorldAxes });
+  }, [showWorldAxes, viewerState]);
+  (0, import_react9.useEffect)(() => {
+    if (viewerState !== "ready" || !splatAlignOpen) return;
+    postToWindow(iframeRef.current?.contentWindow, { type: "sogs:requestState" });
+  }, [splatAlignOpen, viewerState]);
   (0, import_react9.useEffect)(() => {
     if (viewerState !== "ready" || !iframeRef.current) return;
     let raf = 0;
@@ -14715,7 +14742,7 @@ function SogsMigratedViewer({
   );
   const toggleDisabled = viewerState !== "ready";
   return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("main", { className: "sogs-migrated-root", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h1", { className: "sogs-migrated-sr-only", children: "Whitney Farm Viewer 2" }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h1", { className: "sogs-migrated-sr-only", children: "Whitney Farm" }),
     /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { ref: containerRef, className: "sogs-migrated-stage", children: [
       viewerSrc ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
         "iframe",
@@ -14796,6 +14823,23 @@ function SogsMigratedViewer({
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "M12 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" }),
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "M6.2 14.2 17.7 9" }),
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "M10.4 18.3 6.3 16" })
+          ] })
+        }
+      ) }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "animation-editor-toggle-wrap", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+        "button",
+        {
+          type: "button",
+          id: "splatAlignToggle",
+          className: `lot-editor-toggle animation-editor-toggle-icon-only ${splatAlignOpen ? "active" : ""}`,
+          "aria-pressed": splatAlignOpen,
+          "aria-label": "Toggle splat position and rotation (developer)",
+          "data-testid": "splat-align-toggle",
+          disabled: toggleDisabled,
+          onClick: () => setSplatAlignOpen((o) => !o),
+          children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("circle", { cx: "12", cy: "12", r: "3" })
           ] })
         }
       ) }),
@@ -14883,6 +14927,210 @@ function SogsMigratedViewer({
         onPlayTour,
         onStopTour,
         pathPlaying
+      }
+    ),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+      "div",
+      {
+        id: "splatAlignPanel",
+        className: `lot-editor-panel animation-editor-panel splat-align-panel ${splatAlignOpen ? "active" : ""}`,
+        "aria-live": "polite",
+        "aria-hidden": !splatAlignOpen,
+        "data-testid": "splat-align-panel",
+        children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "animation-editor-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-title", children: "Splat align" }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", className: "animation-editor-close", "aria-label": "Close", onClick: () => setSplatAlignOpen(false), children: "\xD7" })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-status animation-editor-status-compact", children: toggleDisabled ? "Loading\u2026" : "World RGB axes at origin; adjust gsplat transform (PlayCanvas euler \xB0)." }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "animation-path-toggles-row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("label", { className: "animation-path-inline-label", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  type: "checkbox",
+                  checked: showWorldAxes,
+                  disabled: toggleDisabled,
+                  onChange: (e) => setShowWorldAxes(e.target.checked)
+                }
+              ),
+              "World axes (RGB XYZ at 0,0,0)"
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-grid splat-align-grid", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "splat-px", children: "Position X" }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  id: "splat-px",
+                  type: "number",
+                  step: "any",
+                  disabled: toggleDisabled,
+                  value: splatPosition[0],
+                  onChange: (e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isFinite(v)) return;
+                    setSplatPosition((p) => [v, p[1], p[2]]);
+                  }
+                }
+              )
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "splat-py", children: "Position Y" }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  id: "splat-py",
+                  type: "number",
+                  step: "any",
+                  disabled: toggleDisabled,
+                  value: splatPosition[1],
+                  onChange: (e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isFinite(v)) return;
+                    setSplatPosition((p) => [p[0], v, p[2]]);
+                  }
+                }
+              )
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "splat-pz", children: "Position Z" }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  id: "splat-pz",
+                  type: "number",
+                  step: "any",
+                  disabled: toggleDisabled,
+                  value: splatPosition[2],
+                  onChange: (e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isFinite(v)) return;
+                    setSplatPosition((p) => [p[0], p[1], v]);
+                  }
+                }
+              )
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "splat-rx", children: "Rotation X (\xB0)" }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  id: "splat-rx",
+                  type: "number",
+                  step: "any",
+                  disabled: toggleDisabled,
+                  value: splatRotation[0],
+                  onChange: (e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isFinite(v)) return;
+                    setSplatRotation((r) => [v, r[1], r[2]]);
+                  }
+                }
+              )
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "splat-ry", children: "Rotation Y (\xB0)" }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  id: "splat-ry",
+                  type: "number",
+                  step: "any",
+                  disabled: toggleDisabled,
+                  value: splatRotation[1],
+                  onChange: (e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isFinite(v)) return;
+                    setSplatRotation((r) => [r[0], v, r[2]]);
+                  }
+                }
+              )
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "splat-rz", children: "Rotation Z (\xB0)" }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  id: "splat-rz",
+                  type: "number",
+                  step: "any",
+                  disabled: toggleDisabled,
+                  value: splatRotation[2],
+                  onChange: (e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isFinite(v)) return;
+                    setSplatRotation((r) => [r[0], r[1], v]);
+                  }
+                }
+              )
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "splat-sc", children: "Uniform scale" }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                "input",
+                {
+                  id: "splat-sc",
+                  type: "number",
+                  min: "1e-6",
+                  step: "any",
+                  disabled: toggleDisabled,
+                  value: splatScale,
+                  onChange: (e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isFinite(v) || v <= 0) return;
+                    setSplatScale(v);
+                  }
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "animation-editor-actions splat-align-actions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "lot-editor-action-btn",
+                disabled: toggleDisabled,
+                onClick: () => {
+                  const win = iframeRef.current?.contentWindow;
+                  const fov = createDefaultScenePayload().fov;
+                  postToWindow(win, {
+                    type: "sogs:apply",
+                    position: splatPosition,
+                    rotation: splatRotation,
+                    scale: splatScale,
+                    fov
+                  });
+                },
+                children: "Apply to viewer"
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "lot-editor-action-btn lot-editor-action-btn-secondary",
+                disabled: toggleDisabled,
+                onClick: () => {
+                  const d = createDefaultScenePayload();
+                  setSplatPosition([...d.position]);
+                  setSplatRotation([...d.rotation]);
+                  setSplatScale(d.scale);
+                  postToWindow(iframeRef.current?.contentWindow, {
+                    type: "sogs:apply",
+                    position: d.position,
+                    rotation: d.rotation,
+                    scale: d.scale,
+                    fov: d.fov
+                  });
+                },
+                children: "Reset defaults"
+              }
+            )
+          ] })
+        ]
       }
     ),
     /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "menu-container", id: "menuContainer", children: [

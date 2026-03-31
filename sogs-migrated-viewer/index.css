@@ -582,6 +582,26 @@
   font-size: 10px;
   color: rgba(255, 255, 255, 0.65);
 }
+.splat-align-panel {
+  left: 12px;
+  right: auto;
+}
+.splat-align-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.splat-align-actions {
+  flex-wrap: wrap;
+}
+.lot-editor-action-btn-secondary {
+  background: rgba(0, 0, 0, 0.22);
+}
+.lot-editor-action-btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.38);
+  border-color: rgba(255, 255, 255, 0.32);
+}
 .sogs-bundle-panel {
   right: 20px;
   bottom: 20px;
@@ -617,6 +637,11 @@
   .animation-editor-panel {
     right: 12px;
     top: 66px;
+    width: min(260px, calc(100vw - 24px));
+  }
+  .splat-align-panel {
+    left: 12px;
+    right: auto;
     width: min(260px, calc(100vw - 24px));
   }
   .sogs-bundle-panel {

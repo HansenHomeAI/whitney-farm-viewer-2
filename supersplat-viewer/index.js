@@ -102440,4 +102440,5 @@ const main = (app, camera, settingsJson, config) => {
     return new Viewer(global, gsplatLoad, skyboxLoad);
 };
 
+window.__sogsPc = { Entity, Mesh, MeshInstance, StandardMaterial, Color, CylinderGeometry, Vec3 };
 export { main };
