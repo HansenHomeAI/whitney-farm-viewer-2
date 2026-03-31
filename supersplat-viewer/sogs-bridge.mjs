@@ -14,8 +14,8 @@ const tmpFocus = new Vec3();
 
 /** Half-length of each axis arm from the origin (total span 2× this along each axis). */
 const AXIS_LEN = 10;
-/** Cylinder radius: ~0.1 unit diameter (thin rod, still visible). */
-const AXIS_RADIUS = 0.05;
+/** Cylinder radius (÷10 vs prior 0.05 for skinnier rods). */
+const AXIS_RADIUS = 0.005;
 /**
  * PlayCanvas default layer ids (must match bundled engine). Gsplat draws in World; we draw axes
  * on Immediate so they composite after the splat and stay visible.
