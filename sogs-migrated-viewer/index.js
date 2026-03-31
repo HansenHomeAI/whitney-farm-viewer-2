@@ -7497,12 +7497,6 @@ var CANYON_VISTA_BORDER_LINES = [
   { start: "Lot_V18", end: "Lot_V21" },
   { start: "Lot_V21", end: "Lot_V15" }
 ];
-function compassArrowRotationDeg(cameraPos, orbitTarget, northDirectionDeg) {
-  const deltaX = cameraPos.x - orbitTarget.x;
-  const deltaZ = cameraPos.z - orbitTarget.z;
-  const cameraBearing = (Math.atan2(deltaX, deltaZ) * 180 / Math.PI + 360) % 360;
-  return (northDirectionDeg - cameraBearing + 360) % 360;
-}
 var CANYON_VISTA_SOLD_HOTSPOTS = [
   { text: "SOLD", position: { x: 0.22, y: 0.5, z: -0.85 }, scale: 0.2, verticalOffset: 0.06 }
 ];
@@ -7909,11 +7903,11 @@ function AnimationPathPanel({
 }
 
 // components/sogs-migrated-viewer/CanyonCompassLive.tsx
-var import_react2 = __toESM(require_react(), 1);
 
 // components/sogs-migrated-viewer/CanyonCompass.tsx
 var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
 var COMPASS_OUTLINE = "https://raw.githubusercontent.com/HansenHomeAI/FigmaSVGButtons/main/NorthOutline.svg";
+var COMPASS_ICON_FIXED_ROTATION_DEG = 300;
 function CanyonCompass({ rotationDeg, onClick, ariaLabel = "Face north" }) {
   return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", id: "compassButton", className: "menu-button", onClick, "aria-label": ariaLabel, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
     "img",
@@ -7929,22 +7923,8 @@ function CanyonCompass({ rotationDeg, onClick, ariaLabel = "Face north" }) {
 
 // components/sogs-migrated-viewer/CanyonCompassLive.tsx
 var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
-function CanyonCompassLive({ poseRef, orbitTargetRef, northDeg, onClick, compassAriaLabel }) {
-  const [rot, setRot] = (0, import_react2.useState)(0);
-  (0, import_react2.useEffect)(() => {
-    let raf = 0;
-    const tick = () => {
-      const p = poseRef.current;
-      const ot = orbitTargetRef.current;
-      if (p) {
-        setRot(compassArrowRotationDeg(p.position, ot, northDeg));
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [poseRef, orbitTargetRef, northDeg]);
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(CanyonCompass, { rotationDeg: rot, onClick, ariaLabel: compassAriaLabel });
+function CanyonCompassLive({ onClick, compassAriaLabel }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(CanyonCompass, { rotationDeg: COMPASS_ICON_FIXED_ROTATION_DEG, onClick, ariaLabel: compassAriaLabel });
 }
 
 // components/sogs-migrated-viewer/CanyonDetailsPanel.tsx
@@ -15258,9 +15238,6 @@ function SogsMigratedViewer({
       viewerState === "ready" ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
         CanyonCompassLive,
         {
-          poseRef,
-          orbitTargetRef: orbitFocusRef,
-          northDeg: activeHoleView.northDirection,
           onClick: onCompassClick,
           compassAriaLabel: CANYON_VISTA_COMPASS.northButtonMode === "animationStart" ? "Go to animation start" : "Face north"
         }
