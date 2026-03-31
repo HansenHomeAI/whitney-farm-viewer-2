@@ -8024,8 +8024,7 @@ function CanyonDetailsPanel({ open, onClose }) {
               }
             ),
             /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("h1", { id: "canyon-details-heading", children: "Whitney Farm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { children: "Whitney Farm offers a rare opportunity to own a substantial and self-contained Georgia farm with room to breathe. Encompassing approximately 225± acres of mixed woodland and open pasture, the property is anchored by a well-positioned residence that serves as a natural hub for the land surrounding it." }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { className: "legal-disclaimer", children: "Information and imagery are representative; property details may vary. Not an offer to sell; consult listing agent for current terms." })
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { children: "Whitney Farm offers a rare opportunity to own a substantial and self-contained Georgia farm with room to breathe. Encompassing approximately 225± acres of mixed woodland and open pasture, the property is anchored by a well-positioned residence that serves as a natural hub for the land surrounding it." })
           ] })
         }
       )
