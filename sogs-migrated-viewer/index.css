@@ -602,18 +602,31 @@
   background: rgba(0, 0, 0, 0.38);
   border-color: rgba(255, 255, 255, 0.32);
 }
-.sogs-bundle-panel {
-  right: 20px;
-  bottom: 20px;
-  top: auto;
+/* Bundle loader: toggle in editor strip; panel drops down from the button */
+.sogs-bundle-toggle-wrap {
+  position: relative;
+  align-self: flex-start;
+}
+.sogs-bundle-panel.lot-editor-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
   left: auto;
-  width: min(280px, calc(100vw - 40px));
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
+  bottom: auto;
+  width: min(280px, calc(100vw - 24px));
+  max-height: min(72vh, 560px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  z-index: 13;
 }
 .sogs-bundle-panel::before {
   pointer-events: none;
+}
+.sogs-bundle-panel .animation-editor-header {
+  margin-bottom: 6px;
+}
+.sogs-bundle-panel .animation-editor-header .lot-editor-title {
+  margin-bottom: 0;
 }
 .sogs-bundle-hole-field {
   margin-bottom: 8px;
@@ -644,9 +657,7 @@
     right: auto;
     width: min(260px, calc(100vw - 24px));
   }
-  .sogs-bundle-panel {
-    right: 12px;
-    bottom: 12px;
+  .sogs-bundle-panel.lot-editor-panel {
     width: min(260px, calc(100vw - 24px));
   }
   .menu-container {

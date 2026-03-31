@@ -14381,6 +14381,7 @@ function SogsMigratedViewer({
   const [pathVersion, setPathVersion] = (0, import_react9.useState)(0);
   const [photoDot, setPhotoDot] = (0, import_react9.useState)(null);
   const [pathPanelOpen, setPathPanelOpen] = (0, import_react9.useState)(false);
+  const [sogsBundleOpen, setSogsBundleOpen] = (0, import_react9.useState)(false);
   const [splatAlignOpen, setSplatAlignOpen] = (0, import_react9.useState)(false);
   const [splatPosition, setSplatPosition] = (0, import_react9.useState)(() => [...createDefaultScenePayload().position]);
   const [splatRotation, setSplatRotation] = (0, import_react9.useState)(() => [...createDefaultScenePayload().rotation]);
@@ -14928,7 +14929,93 @@ function SogsMigratedViewer({
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("polyline", { points: "21 3 21 9 15 9" })
           ] })
         }
-      ) })
+      ) }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-toggle-wrap sogs-bundle-toggle-wrap", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+          "button",
+          {
+            type: "button",
+            id: "sogsBundleToggle",
+            className: `lot-editor-toggle animation-editor-toggle-icon-only ${sogsBundleOpen ? "active" : ""}`,
+            "aria-pressed": sogsBundleOpen,
+            "aria-expanded": sogsBundleOpen,
+            "aria-controls": "sogsBundlePanel",
+            "aria-label": "Toggle SOGS bundle loader",
+            "data-testid": "sogs-bundle-toggle",
+            disabled: toggleDisabled,
+            onClick: () => setSogsBundleOpen((v) => !v),
+            children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" })
+            ] })
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+          "div",
+          {
+            id: "sogsBundlePanel",
+            className: `lot-editor-panel sogs-bundle-panel ${sogsBundleOpen ? "active" : ""}`,
+            "aria-label": "SOGS bundle",
+            "aria-hidden": !sogsBundleOpen,
+            "data-testid": "sogs-bundle-panel",
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "animation-editor-header", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-title", children: "Bundle" }),
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", className: "animation-editor-close", "aria-label": "Close bundle panel", onClick: () => setSogsBundleOpen(false), children: "\xD7" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field sogs-bundle-hole-field", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "sogs-hole-picker", children: "Hole" }),
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                  "select",
+                  {
+                    id: "sogs-hole-picker",
+                    "data-testid": "sogs-hole-picker",
+                    value: selectedHoleId,
+                    onChange: (e) => {
+                      const id = e.target.value;
+                      setSelectedHoleId(id);
+                      const hole = CANYON_VISTA_HOLES.find((h) => h.id === id);
+                      const url = hole?.bundleUrl ?? DEFAULT_SOGS_BUNDLE_URL;
+                      setInputUrl(url);
+                      if (attemptLoad(url)) setPathPlaying(false);
+                    },
+                    disabled: viewerState === "loading",
+                    children: CANYON_VISTA_HOLES.map((h) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("option", { value: h.id, children: h.label }, h.id))
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+                "form",
+                {
+                  className: "sogs-bundle-form",
+                  onSubmit: (e) => {
+                    e.preventDefault();
+                    if (attemptLoad(inputUrl)) setPathPlaying(false);
+                  },
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "sogs-migrated-url", children: "SOGS URL" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+                        "input",
+                        {
+                          id: "sogs-migrated-url",
+                          type: "url",
+                          value: inputUrl,
+                          onChange: (e) => setInputUrl(e.target.value),
+                          placeholder: "https://\u2026/meta.json"
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-actions sogs-bundle-actions", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "submit", className: "lot-editor-action-btn", disabled: viewerState === "loading", children: "Load" }) })
+                  ]
+                }
+              ),
+              error ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "sogs-bundle-error", children: error }) : null,
+              viewerState === "loading" ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "lot-editor-status", children: "Loading viewer\u2026" }) : null
+            ]
+          }
+        )
+      ] })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
       AnimationPathPanel,
@@ -15181,58 +15268,6 @@ function SogsMigratedViewer({
       ) : null
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(CanyonDetailsPanel, { open: detailsOpen, onClose: () => setDetailsOpen(false) }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-panel sogs-bundle-panel", "aria-label": "SOGS bundle", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-title", children: "Bundle" }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field sogs-bundle-hole-field", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "sogs-hole-picker", children: "Hole" }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
-          "select",
-          {
-            id: "sogs-hole-picker",
-            "data-testid": "sogs-hole-picker",
-            value: selectedHoleId,
-            onChange: (e) => {
-              const id = e.target.value;
-              setSelectedHoleId(id);
-              const hole = CANYON_VISTA_HOLES.find((h) => h.id === id);
-              const url = hole?.bundleUrl ?? DEFAULT_SOGS_BUNDLE_URL;
-              setInputUrl(url);
-              if (attemptLoad(url)) setPathPlaying(false);
-            },
-            disabled: viewerState === "loading",
-            children: CANYON_VISTA_HOLES.map((h) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("option", { value: h.id, children: h.label }, h.id))
-          }
-        )
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
-        "form",
-        {
-          className: "sogs-bundle-form",
-          onSubmit: (e) => {
-            e.preventDefault();
-            if (attemptLoad(inputUrl)) setPathPlaying(false);
-          },
-          children: [
-            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lot-editor-field", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("label", { htmlFor: "sogs-migrated-url", children: "SOGS URL" }),
-              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
-                "input",
-                {
-                  id: "sogs-migrated-url",
-                  type: "url",
-                  value: inputUrl,
-                  onChange: (e) => setInputUrl(e.target.value),
-                  placeholder: "https://\u2026/meta.json"
-                }
-              )
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-actions sogs-bundle-actions", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "submit", className: "lot-editor-action-btn", disabled: viewerState === "loading", children: "Load" }) })
-          ]
-        }
-      ),
-      error ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "sogs-bundle-error", children: error }) : null,
-      viewerState === "loading" ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "lot-editor-status", children: "Loading viewer\u2026" }) : null
-    ] }),
     /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(CanyonPhotoModal, { dot: photoDot, onClose: () => setPhotoDot(null) })
   ] });
 }
