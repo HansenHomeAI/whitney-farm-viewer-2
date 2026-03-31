@@ -1237,14 +1237,14 @@
 }
 @keyframes sogs-tap-pick-feedback-pop {
   0% {
-    opacity: 0.4;
-    transform: translate(-50%, -50%) scale(0.68);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55);
   }
-  18% {
+  35% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1.05);
   }
-  62% {
+  70% {
     opacity: 0.92;
     transform: translate(-50%, -50%) scale(1);
   }

@@ -14287,7 +14287,7 @@ function TapDotsOverlay({ enabled, tapDots, poseRef, containerRef, onOpenPhotos 
 // components/sogs-migrated-viewer/TapPickFeedback.tsx
 var import_react8 = __toESM(require_react(), 1);
 var import_jsx_runtime10 = __toESM(require_jsx_runtime(), 1);
-function TapPickFeedback({ screen, durationMs = 600 }) {
+function TapPickFeedback({ screen, durationMs = 720 }) {
   const [visible, setVisible] = (0, import_react8.useState)(false);
   (0, import_react8.useEffect)(() => {
     if (!screen) {
