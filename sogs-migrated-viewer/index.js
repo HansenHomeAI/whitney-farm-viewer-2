@@ -14385,6 +14385,7 @@ function SogsMigratedViewer({
   const [splatPosition, setSplatPosition] = (0, import_react9.useState)(() => [...createDefaultScenePayload().position]);
   const [splatRotation, setSplatRotation] = (0, import_react9.useState)(() => [...createDefaultScenePayload().rotation]);
   const [splatScale, setSplatScale] = (0, import_react9.useState)(() => createDefaultScenePayload().scale);
+  const [splatCopyFeedback, setSplatCopyFeedback] = (0, import_react9.useState)(null);
   const [showWorldAxes, setShowWorldAxes] = (0, import_react9.useState)(false);
   const [detailsOpen, setDetailsOpen] = (0, import_react9.useState)(false);
   const [revealDone, setRevealDone] = (0, import_react9.useState)(false);
@@ -14599,6 +14600,22 @@ function SogsMigratedViewer({
     if (viewerState !== "ready" || !splatAlignOpen) return;
     postToWindow(iframeRef.current?.contentWindow, { type: "sogs:requestState" });
   }, [splatAlignOpen, viewerState]);
+  (0, import_react9.useEffect)(() => {
+    if (viewerState !== "ready" || !splatAlignOpen) return;
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    const fov = createDefaultScenePayload().fov;
+    const id = window.setTimeout(() => {
+      postToWindow(win, {
+        type: "sogs:apply",
+        position: [...splatPosition],
+        rotation: [...splatRotation],
+        scale: splatScale,
+        fov
+      });
+    }, 350);
+    return () => clearTimeout(id);
+  }, [splatPosition, splatRotation, splatScale, viewerState, splatAlignOpen]);
   (0, import_react9.useEffect)(() => {
     if (viewerState !== "ready" || !iframeRef.current) return;
     let raf = 0;
@@ -14942,7 +14959,7 @@ function SogsMigratedViewer({
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-title", children: "Splat align" }),
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", className: "animation-editor-close", "aria-label": "Close", onClick: () => setSplatAlignOpen(false), children: "\xD7" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-status animation-editor-status-compact", children: toggleDisabled ? "Loading\u2026" : "World RGB axes at origin; adjust gsplat transform (PlayCanvas euler \xB0)." }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "lot-editor-status animation-editor-status-compact", children: toggleDisabled ? "Loading\u2026" : "Values apply to the viewer as you edit. Copy JSON to update SOGS default scene in code." }),
           /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "animation-path-toggles-row", children: [
             /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("label", { className: "animation-path-inline-label", children: [
               /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
@@ -15094,17 +15111,26 @@ function SogsMigratedViewer({
                 className: "lot-editor-action-btn",
                 disabled: toggleDisabled,
                 onClick: () => {
-                  const win = iframeRef.current?.contentWindow;
                   const fov = createDefaultScenePayload().fov;
-                  postToWindow(win, {
-                    type: "sogs:apply",
-                    position: splatPosition,
-                    rotation: splatRotation,
+                  const payload = {
+                    position: [...splatPosition],
+                    rotation: [...splatRotation],
                     scale: splatScale,
                     fov
-                  });
+                  };
+                  const text = JSON.stringify(payload, null, 2);
+                  void navigator.clipboard.writeText(text).then(
+                    () => {
+                      setSplatCopyFeedback("Copied");
+                      window.setTimeout(() => setSplatCopyFeedback(null), 2e3);
+                    },
+                    () => {
+                      setSplatCopyFeedback("Copy failed");
+                      window.setTimeout(() => setSplatCopyFeedback(null), 2e3);
+                    }
+                  );
                 },
-                children: "Apply to viewer"
+                children: "Copy scene JSON"
               }
             ),
             /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
@@ -15129,7 +15155,8 @@ function SogsMigratedViewer({
                 children: "Reset defaults"
               }
             )
-          ] })
+          ] }),
+          splatCopyFeedback ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "animation-path-copy-feedback", children: splatCopyFeedback }) : null
         ]
       }
     ),
