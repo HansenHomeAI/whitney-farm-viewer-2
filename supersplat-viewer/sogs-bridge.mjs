@@ -12,13 +12,15 @@ const tmpTo = new Vec3();
 /** Orbit focus point for `sogs:cameraPose` (parent overlays / Three.js projection). */
 const tmpFocus = new Vec3();
 
-const AXIS_LEN = 45;
+/** Half-length of each axis arm from the origin (total span 2× this along each axis). */
+const AXIS_LEN = 10;
+/** Cylinder radius: ~0.1 unit diameter (thin rod, still visible). */
+const AXIS_RADIUS = 0.05;
 /**
- * Cylinder radius for RGB axis guides (world + splat-local).
- * Original was 0.28; 0.0028 (÷100) was too thin to see at scene scale (sub-pixel / lost in depth).
- * ~0.028 is ~10× thinner than original but still reads as a thin line in the viewer.
+ * PlayCanvas default layer ids (must match bundled engine). Gsplat draws in World; we draw axes
+ * on Immediate so they composite after the splat and stay visible.
  */
-const AXIS_RADIUS = 0.028;
+const LAYER_ID_IMMEDIATE = 3;
 
 window.firstFrame = function sogsFirstFrameHook() {
   window.parent.postMessage({ type: "supersplat:firstFrame" }, "*");
@@ -143,39 +145,23 @@ function axisMaterial(rgb) {
   m.emissive = new Color(rgb[0], rgb[1], rgb[2]);
   m.emissiveIntensity = 1;
   m.useLighting = false;
-  /** Draw through splat/geometry so alignment axes stay visible at the origin. */
-  m.depthTest = false;
-  m.depthWrite = false;
   return m;
 }
 
-function copyRenderLayers(fromEntity, toEntity) {
+/** After `render` exists: draw on Immediate layer (after World), so gsplat does not paint over axes. */
+function setAxisGuideRenderLayer(ent) {
   try {
-    const layers = fromEntity.render?.layers;
-    if (layers?.length && toEntity.render) {
-      toEntity.render.layers = layers.slice();
+    if (ent.render) {
+      ent.render.layers = [LAYER_ID_IMMEDIATE];
     }
   } catch {
     /* ignore */
   }
 }
 
-/** gsplat often has no `render`; fall back to the main camera entity so axes land on the same layers. */
-function layerSourceForAxes(app) {
-  const g = app.root.findByName("gsplat");
-  if (g?.render?.layers?.length) {
-    return g;
-  }
-  const cam = app.root.findByName("camera");
-  if (cam?.render?.layers?.length) {
-    return cam;
-  }
-  return g;
-}
-
 /**
  * Thin cylinders along local +X / +Y / +Z at the splat origin, parented to gsplat.
- * Renders in the normal forward pass (depth-tested), not as immediate drawLine overlay.
+ * Uses Immediate render layer so gsplat does not occlude them.
  */
 function buildAxisCylinderMesh(app, radius = AXIS_RADIUS) {
   const device = app.graphicsDevice;
@@ -221,7 +207,7 @@ function setupSogsAxesGuides(app, gsplatEntity) {
       castShadows: false,
       receiveShadows: false,
     });
-    copyRenderLayers(gsplatEntity, ent);
+    setAxisGuideRenderLayer(ent);
     root.addChild(ent);
   }
 
@@ -232,7 +218,7 @@ function setupSogsAxesGuides(app, gsplatEntity) {
 /**
  * RGB XYZ cylinders at world origin (0,0,0), identity rotation — true world +X/+Y/+Z, independent of gsplat transform.
  */
-function setupWorldAxesGuides(app, layerSourceEntity) {
+function setupWorldAxesGuides(app) {
   if (window.__sogsWorldAxesRoot) {
     try {
       window.__sogsWorldAxesRoot.destroy();
@@ -260,7 +246,7 @@ function setupWorldAxesGuides(app, layerSourceEntity) {
       castShadows: false,
       receiveShadows: false,
     });
-    copyRenderLayers(layerSourceEntity, ent);
+    setAxisGuideRenderLayer(ent);
     root.addChild(ent);
   }
 
@@ -273,9 +259,8 @@ function syncWorldAxesGuides(app) {
   if (!g) {
     return;
   }
-  const layerSource = layerSourceForAxes(app);
   if (window.__sogsWorldGuidesEnabled && !window.__sogsWorldAxesRoot) {
-    setupWorldAxesGuides(app, layerSource);
+    setupWorldAxesGuides(app);
   }
   if (window.__sogsWorldAxesRoot) {
     window.__sogsWorldAxesRoot.enabled = !!window.__sogsWorldGuidesEnabled;
