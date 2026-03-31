@@ -7395,8 +7395,8 @@ var CANYON_VISTA_DEFAULT_PATH_CHECKPOINTS = [
 ];
 var CANYON_VISTA_CAMERA_START_Y = 0.55;
 var CANYON_VISTA_CAMERA_WORLD_BOUNDS = {
-  yMin: -10,
-  maxRadiusFromOrigin: 200
+  yMin: -1,
+  maxRadiusFromOrigin: 1
 };
 
 // lib/canyon-vista/canyonVistaOverlays.ts
