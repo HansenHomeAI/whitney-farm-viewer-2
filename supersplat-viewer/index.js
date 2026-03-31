@@ -100980,6 +100980,7 @@ class OrbitController {
 
 const tmpCamera = new Camera();
 const tmpv = new Vec3();
+const scratchPickScreen = new Vec3();
 const createCamera = (position, target, fov) => {
     const result = new Camera();
     result.look(position, target);
@@ -100996,6 +100997,9 @@ class CameraManager {
     // holds the camera state
     camera = new Camera();
     constructor(global, bbox) {
+        this._global = global;
+        this._pickFocusWorld = new Vec3();
+        this._pickFocusFramesLeft = 0;
         const { events, settings, state } = global;
         const camera0 = settings.cameras[0].initial;
         const frameCamera = createFrameCamera(bbox, camera0.fov);
@@ -101123,20 +101127,8 @@ class CameraManager {
             tmpCamera.copy(cam);
             tmpCamera.look(cam.position, worldPos);
             controllers.orbit.goto(tmpCamera);
-            try {
-                if (payload && payload.world && window.parent) {
-                    window.parent.postMessage({
-                        type: 'sogs:pickFocus',
-                        world: [
-                            worldPos.x,
-                            worldPos.y,
-                            worldPos.z
-                        ],
-                        clientX: payload.clientX,
-                        clientY: payload.clientY
-                    }, '*');
-                }
-            } catch (e) {}
+            this._pickFocusWorld.set(worldPos.x, worldPos.y, worldPos.z);
+            this._pickFocusFramesLeft = 90;
         });
         events.on('annotation.activate', (annotation) => {
             // switch to orbit camera on pick
@@ -101151,6 +101143,32 @@ class CameraManager {
         this.syncOrbitFromCurrentCamera = () => {
             controllers.orbit.goto(this.camera, false);
         };
+    }
+    emitPickFocusScreen() {
+        const global = this._global;
+        if (!global || this._pickFocusFramesLeft <= 0) {
+            return;
+        }
+        const worldPos = this._pickFocusWorld;
+        const screen = global.camera.camera.worldToScreen(worldPos, scratchPickScreen);
+        this._pickFocusFramesLeft--;
+        if (!screen || !isFinite(screen.x) || !isFinite(screen.y)) {
+            return;
+        }
+        try {
+            if (window.parent) {
+                window.parent.postMessage({
+                    type: 'sogs:pickFocus',
+                    world: [
+                        worldPos.x,
+                        worldPos.y,
+                        worldPos.z
+                    ],
+                    clientX: screen.x,
+                    clientY: screen.y
+                }, '*');
+            }
+        } catch (e) {}
     }
 }
 
@@ -101669,6 +101687,7 @@ class Viewer {
                 this.cameraManager.update(deltaTime, this.inputController.frame);
                 // apply to the camera entity
                 applyCamera(this.cameraManager.camera);
+                this.cameraManager.emitPickFocusScreen();
             }
         });
         // wait for the model to load
