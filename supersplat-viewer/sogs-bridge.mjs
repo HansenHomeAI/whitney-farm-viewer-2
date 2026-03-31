@@ -102,6 +102,10 @@ function postCameraPoseFromViewer(cameraManager) {
 /**
  * Keeps the camera eye (logical `Camera.position`) above a world Y floor and/or inside a sphere around origin.
  * Iterates so Y and radius limits can both apply without fighting.
+ *
+ * After moving only `position`, the orbit camera's `angles` + `distance` would still describe the *old* focus.
+ * `calcFocusPoint` would then report a bogus target (often very far). We snapshot the true focus before clamping
+ * and run `look(clampedEye, savedFocus)` so the pivot stays fixed while the eye is constrained.
  */
 function clampSogsCameraPosition(cameraManager) {
   const yMin = window.__sogsCameraYMin;
@@ -109,7 +113,9 @@ function clampSogsCameraPosition(cameraManager) {
   const hasY = typeof yMin === "number" && Number.isFinite(yMin);
   const hasR = typeof maxR === "number" && Number.isFinite(maxR) && maxR > 0;
   if (!hasY && !hasR) return false;
-  const pos = cameraManager.camera.position;
+  const cam = cameraManager.camera;
+  cam.calcFocusPoint(tmpFocus);
+  const pos = cam.position;
   let changed = false;
   for (let i = 0; i < 6; i++) {
     if (hasY) {
@@ -124,6 +130,10 @@ function clampSogsCameraPosition(cameraManager) {
         changed = true;
       }
     }
+  }
+  if (changed) {
+    tmpFrom.copy(pos);
+    cam.look(tmpFrom, tmpFocus);
   }
   return changed;
 }
