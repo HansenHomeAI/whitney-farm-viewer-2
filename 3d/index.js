@@ -14868,7 +14868,7 @@ function SogsMigratedViewer({
         {
           ref: iframeRef,
           src: viewerSrc,
-          title: "sogs-migrated-viewer",
+          title: "3d",
           className: "sogs-migrated-iframe",
           allow: "xr-spatial-tracking"
         },

@@ -9,11 +9,11 @@ npm install
 npm run dev
 ```
 
-The Vite dev server serves the repo root, and `/` redirects to `/sogs-migrated-viewer/`.
+The Vite dev server serves the repo root, and `/` redirects to `/3d/`.
 
 ## Repo structure
 
-- `sogs-migrated-viewer/`: shell app
+- `3d/`: shell app
 - `supersplat-viewer/`: renderer app
 - `index.html`: root redirect for GitHub Pages and local startup
 
