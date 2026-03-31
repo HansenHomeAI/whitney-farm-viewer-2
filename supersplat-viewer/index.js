@@ -101290,7 +101290,7 @@ class InputController {
     // this gets overridden by the viewer based on scene size
     moveSpeed = 4;
     orbitSpeed = 18;
-    pinchSpeed = 0.4;
+    pinchSpeed = 0.32;
     wheelSpeed = 0.06;
     constructor(global) {
         const { app, camera, events, state } = global;
