@@ -39,14 +39,17 @@
 
             const posterUrl = url.searchParams.get('poster');
             const explicitSkyboxUrl = url.searchParams.get('skybox');
+            const quality = url.searchParams.get('quality') === 'lq' ? 'lq' : 'hq';
+            const lowQuality = quality === 'lq';
             const settingsUrl = url.searchParams.has('settings') ? url.searchParams.get('settings') : './settings.json';
             const contentUrl = url.searchParams.has('content') ? url.searchParams.get('content') : './scene.compressed.ply';
 
             const sseConfigPromise = (async () => ({
                 poster: posterUrl && createImage(posterUrl),
-                skyboxUrl: await resolveBundleSkyboxUrl(contentUrl, explicitSkyboxUrl),
+                skyboxUrl: lowQuality ? null : await resolveBundleSkyboxUrl(contentUrl, explicitSkyboxUrl),
                 contentUrl,
                 contents: fetch(contentUrl),
+                lowQuality,
                 noui: url.searchParams.has('noui'),
                 noanim: url.searchParams.has('noanim'),
                 ministats: url.searchParams.has('ministats'),
@@ -322,6 +325,23 @@
                 <path d="M16 2.09961C16.4971 2.09961 16.9004 2.50294 16.9004 3V7.09961H21C21.4971 7.09961 21.9004 7.50294 21.9004 8C21.9004 8.49706 21.4971 8.90039 21 8.90039H16C15.5029 8.90039 15.0996 8.49706 15.0996 8V3C15.0996 2.50294 15.5029 2.09961 16 2.09961Z" />
             </symbol>
         </svg>
+
+        <script>
+            (() => {
+                const params = new URLSearchParams(window.location.search);
+                const quality = params.get('quality') === 'lq' ? 'lq' : 'hq';
+                window.__sogsBootOptions = {
+                    quality,
+                    lowQuality: quality === 'lq'
+                };
+                if (quality === 'lq') {
+                    const app = document.querySelector('pc-app');
+                    if (app) {
+                        app.setAttribute('high-resolution', 'false');
+                    }
+                }
+            })();
+        </script>
 
         <!-- Application Script (Spaceport SOGS bridge: postMessage + guides) -->
         <script type="module" src="./sogs-bridge.mjs"></script>

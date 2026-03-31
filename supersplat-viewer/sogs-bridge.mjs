@@ -16,11 +16,95 @@ const tmpFocus = new Vec3();
 const AXIS_LEN = 10;
 /** Cylinder radius (÷10 vs prior 0.05 for skinnier rods). */
 const AXIS_RADIUS = 0.005;
+const MAIN_BOOT_TIMEOUT_MS = 15e3;
+const BRIDGE_WAIT_TIMEOUT_MS = 12e3;
 /**
  * PlayCanvas default layer ids (must match bundled engine). Gsplat draws in World; we draw axes
  * on Immediate so they composite after the splat and stay visible.
  */
 const LAYER_ID_IMMEDIATE = 3;
+
+function getBootOptions() {
+  if (typeof window === "undefined") {
+    return { quality: "hq", lowQuality: false };
+  }
+  const fromWindow = window.__sogsBootOptions;
+  if (fromWindow && typeof fromWindow === "object") {
+    return {
+      quality: fromWindow.quality === "lq" ? "lq" : "hq",
+      lowQuality: fromWindow.lowQuality === true || fromWindow.quality === "lq"
+    };
+  }
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const lowQuality = params.get("quality") === "lq";
+    return {
+      quality: lowQuality ? "lq" : "hq",
+      lowQuality
+    };
+  } catch {
+    return { quality: "hq", lowQuality: false };
+  }
+}
+
+function postBootEvent(type, detail = {}) {
+  try {
+    window.parent.postMessage(
+      {
+        type,
+        ...detail
+      },
+      "*"
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+function withTimeout(promise, timeoutMs, stage) {
+  return new Promise((resolve, reject) => {
+    const id = window.setTimeout(() => {
+      reject(new Error(`timeout:${stage}`));
+    }, timeoutMs);
+    Promise.resolve(promise).then(
+      (value) => {
+        clearTimeout(id);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(id);
+        reject(error);
+      }
+    );
+  });
+}
+
+function waitForValue(getValue, stage, timeoutMs = BRIDGE_WAIT_TIMEOUT_MS, intervalMs = 30) {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + timeoutMs;
+    const finishReject = (error) => {
+      clearInterval(id);
+      reject(error);
+    };
+    const tick = () => {
+      try {
+        const value = getValue();
+        if (value) {
+          clearInterval(id);
+          resolve(value);
+          return;
+        }
+        if (Date.now() >= deadline) {
+          finishReject(new Error(`timeout:${stage}`));
+        }
+      } catch (error) {
+        finishReject(error);
+      }
+    };
+    const id = window.setInterval(tick, intervalMs);
+    tick();
+  });
+}
 
 window.firstFrame = function sogsFirstFrameHook() {
   window.parent.postMessage({ type: "supersplat:firstFrame" }, "*");
@@ -326,122 +410,139 @@ function syncSogsAxesGuides(app) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const bootOptions = getBootOptions();
+  postBootEvent("supersplat:bootStart", { quality: bootOptions.quality });
   const { config, configReady, settings } = window.sse;
-  const resolvedConfig = await Promise.resolve(configReady ?? config);
-  const { poster } = resolvedConfig;
+  try {
+    const resolvedConfig = await Promise.resolve(configReady ?? config);
+    const bootConfig = {
+      ...resolvedConfig,
+      lowQuality: bootOptions.lowQuality
+    };
+    const { poster } = bootConfig;
 
-  if (poster) {
-    const element = document.getElementById("poster");
-    element.style.backgroundImage = `url(${poster.src})`;
-    element.style.display = "block";
-    element.style.filter = "blur(40px)";
-  }
-
-  const [appElement, cameraElement, settingsJson] = await Promise.all([
-    document.querySelector("pc-app").ready(),
-    document.querySelector('pc-entity[name="camera"]').ready(),
-    settings,
-  ]);
-
-  const app = appElement.app;
-  const camera = cameraElement.entity;
-  const viewer = await main(app, camera, settingsJson, resolvedConfig);
-
-  window.__sogsCtx = { viewer, app, camera };
-
-  const waitGsplat = () =>
-    new Promise((resolve) => {
-      const id = setInterval(() => {
-        const e = app.root.findByName("gsplat");
-        if (e) {
-          clearInterval(id);
-          resolve(e);
-        }
-      }, 30);
-    });
-
-  await waitGsplat();
-
-  await new Promise((resolve) => {
-    const id = setInterval(() => {
-      if (viewer.cameraManager) {
-        clearInterval(id);
-        resolve(undefined);
-      }
-    }, 30);
-  });
-
-  setupCameraManagerBridge(viewer.cameraManager);
-  /** Primary pointer + pointermove pan was removed: it fought orbit/touch and caused bounce. */
-  window.__sogsSplatXzDragReady = true;
-
-  window.addEventListener("message", (event) => {
-    const d = event.data;
-    if (!d || typeof d !== "object") {
-      return;
+    if (poster) {
+      const element = document.getElementById("poster");
+      element.style.backgroundImage = `url(${poster.src})`;
+      element.style.display = "block";
+      element.style.filter = "blur(40px)";
     }
-    if (d.type === "sogs:apply") {
-      const g = app.root.findByName("gsplat");
-      if (!g) {
+
+    const [appElement, cameraElement, settingsJson] = await Promise.all([
+      document.querySelector("pc-app").ready(),
+      document.querySelector('pc-entity[name="camera"]').ready(),
+      settings,
+    ]);
+
+    const app = appElement.app;
+    const camera = cameraElement.entity;
+    const viewer = await withTimeout(main(app, camera, settingsJson, bootConfig), MAIN_BOOT_TIMEOUT_MS, "main");
+
+    if (bootOptions.lowQuality) {
+      try {
+        appElement.highResolution = false;
+      } catch {
+        /* ignore */
+      }
+      try {
+        viewer.global.state.hqMode = false;
+      } catch {
+        /* ignore */
+      }
+      try {
+        app.graphicsDevice.maxPixelRatio = 1;
+      } catch {
+        /* ignore */
+      }
+    }
+
+    window.__sogsCtx = { viewer, app, camera };
+
+    await waitForValue(() => app.root.findByName("gsplat"), "gsplat");
+    await waitForValue(() => viewer.cameraManager, "cameraManager");
+
+    setupCameraManagerBridge(viewer.cameraManager);
+    /** Primary pointer + pointermove pan was removed: it fought orbit/touch and caused bounce. */
+    window.__sogsSplatXzDragReady = true;
+
+    window.addEventListener("message", (event) => {
+      const d = event.data;
+      if (!d || typeof d !== "object") {
         return;
       }
-      if (Array.isArray(d.position) && d.position.length === 3) {
-        g.setLocalPosition(d.position[0], d.position[1], d.position[2]);
+      if (d.type === "sogs:apply") {
+        const g = app.root.findByName("gsplat");
+        if (!g) {
+          return;
+        }
+        if (Array.isArray(d.position) && d.position.length === 3) {
+          g.setLocalPosition(d.position[0], d.position[1], d.position[2]);
+        }
+        if (Array.isArray(d.rotation) && d.rotation.length === 3) {
+          g.setLocalEulerAngles(d.rotation[0], d.rotation[1], d.rotation[2]);
+        }
+        if (typeof d.scale === "number" && Number.isFinite(d.scale)) {
+          g.setLocalScale(d.scale, d.scale, d.scale);
+        }
+        if (typeof d.fov === "number" && Number.isFinite(d.fov)) {
+          window.__sogsUserFov = d.fov;
+        }
+        app.renderNextFrame = true;
+        postSogsState();
       }
-      if (Array.isArray(d.rotation) && d.rotation.length === 3) {
-        g.setLocalEulerAngles(d.rotation[0], d.rotation[1], d.rotation[2]);
+      if (d.type === "sogs:guides") {
+        window.__sogsGuidesEnabled = !!d.enabled;
+        syncSogsAxesGuides(app);
       }
-      if (typeof d.scale === "number" && Number.isFinite(d.scale)) {
-        g.setLocalScale(d.scale, d.scale, d.scale);
+      if (d.type === "sogs:worldGuides") {
+        window.__sogsWorldGuidesEnabled = !!d.enabled;
+        syncWorldAxesGuides(app);
       }
-      if (typeof d.fov === "number" && Number.isFinite(d.fov)) {
-        window.__sogsUserFov = d.fov;
+      if (d.type === "sogs:requestState") {
+        postSogsState();
       }
-      app.renderNextFrame = true;
-      postSogsState();
-    }
-    if (d.type === "sogs:guides") {
-      window.__sogsGuidesEnabled = !!d.enabled;
-      syncSogsAxesGuides(app);
-    }
-    if (d.type === "sogs:worldGuides") {
-      window.__sogsWorldGuidesEnabled = !!d.enabled;
-      syncWorldAxesGuides(app);
-    }
-    if (d.type === "sogs:requestState") {
-      postSogsState();
-    }
-    if (d.type === "sogs:cameraLookAt") {
-      window.__sogsCameraPose = {
-        position: d.position,
-        target: d.target,
-        fov: d.fov,
-      };
-      app.renderNextFrame = true;
-    }
-    if (d.type === "sogs:cameraMode") {
-      const scripted = d.mode === "scripted" || d.scripted === true;
-      window.__sogsScriptedCamera = !!scripted;
-      app.renderNextFrame = true;
-    }
-    if (d.type === "sogs:cameraBounds") {
-      window.__sogsCameraYMin =
-        typeof d.yMin === "number" && Number.isFinite(d.yMin) ? d.yMin : null;
-      window.__sogsCameraMaxRadius =
-        typeof d.maxRadiusFromOrigin === "number" && Number.isFinite(d.maxRadiusFromOrigin) && d.maxRadiusFromOrigin > 0
-          ? d.maxRadiusFromOrigin
-          : null;
-      app.renderNextFrame = true;
-    }
-  });
+      if (d.type === "sogs:cameraLookAt") {
+        window.__sogsCameraPose = {
+          position: d.position,
+          target: d.target,
+          fov: d.fov,
+        };
+        app.renderNextFrame = true;
+      }
+      if (d.type === "sogs:cameraMode") {
+        const scripted = d.mode === "scripted" || d.scripted === true;
+        window.__sogsScriptedCamera = !!scripted;
+        app.renderNextFrame = true;
+      }
+      if (d.type === "sogs:cameraBounds") {
+        window.__sogsCameraYMin =
+          typeof d.yMin === "number" && Number.isFinite(d.yMin) ? d.yMin : null;
+        window.__sogsCameraMaxRadius =
+          typeof d.maxRadiusFromOrigin === "number" && Number.isFinite(d.maxRadiusFromOrigin) && d.maxRadiusFromOrigin > 0
+            ? d.maxRadiusFromOrigin
+            : null;
+        app.renderNextFrame = true;
+      }
+    });
 
-  /** Tell parent to exit scripted tour / auto-orbit when the user grabs the view (orbit, zoom, touch). */
-  const notifyUserInteraction = () => {
-    if (window.__sogsScriptedCamera) {
-      window.parent.postMessage({ type: "sogs:userInteraction" }, "*");
+    /** Tell parent to exit scripted tour / auto-orbit when the user grabs the view (orbit, zoom, touch). */
+    const notifyUserInteraction = () => {
+      if (window.__sogsScriptedCamera) {
+        window.parent.postMessage({ type: "sogs:userInteraction" }, "*");
+      }
+    };
+    for (const ev of ["pointerdown", "wheel", "touchstart"]) {
+      window.addEventListener(ev, notifyUserInteraction, { capture: true, passive: true });
     }
-  };
-  for (const ev of ["pointerdown", "wheel", "touchstart"]) {
-    window.addEventListener(ev, notifyUserInteraction, { capture: true, passive: true });
+    postBootEvent("supersplat:bridgeReady", { quality: bootOptions.quality });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const stage = message.startsWith("timeout:") ? message.slice("timeout:".length) : "unknown";
+    console.error("SOGS boot failed", error);
+    postBootEvent("supersplat:bootError", {
+      quality: bootOptions.quality,
+      stage,
+      message,
+    });
   }
 });

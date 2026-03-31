@@ -7313,6 +7313,19 @@ var PROXY_HOSTS = /* @__PURE__ */ new Set([
   "spaceport-ml-processing.s3.us-west-2.amazonaws.com"
 ]);
 var DEFAULT_SOGS_BUNDLE_URL = "https://spaceport-ml-processing.s3.amazonaws.com/compressed/edited-splat-20260330-browser/supersplat_bundle/meta.json";
+var MOBILE_BOOT_TIMEOUT_MS = 8e3;
+function shouldUseMobileBootFallback() {
+  if (typeof window === "undefined") return false;
+  try {
+    if (window.matchMedia?.("(pointer: coarse)").matches) return true;
+  } catch {
+  }
+  try {
+    if (typeof navigator !== "undefined" && navigator.maxTouchPoints > 1) return true;
+  } catch {
+  }
+  return false;
+}
 function getBaseOrigin() {
   return typeof window !== "undefined" ? window.location.origin : "https://spcprt.com";
 }
@@ -14406,6 +14419,7 @@ function SogsMigratedViewer({
   const [error, setError] = (0, import_react9.useState)(null);
   const [iframeKey, setIframeKey] = (0, import_react9.useState)(0);
   const [viewerState, setViewerState] = (0, import_react9.useState)("idle");
+  const [bootMode, setBootMode] = (0, import_react9.useState)("default");
   const [pathPlaying, setPathPlaying] = (0, import_react9.useState)(false);
   const [autoRotate, setAutoRotate] = (0, import_react9.useState)(CANYON_VISTA_ORBIT.autoRotateDefault);
   const [showTapDots, setShowTapDots] = (0, import_react9.useState)(false);
@@ -14469,7 +14483,18 @@ function SogsMigratedViewer({
   }, [activeHoleView]);
   const [pickFeedbackScreen, setPickFeedbackScreen] = (0, import_react9.useState)(null);
   const [developerToolsEnabled] = (0, import_react9.useState)(getSogsDeveloperToolsEnabled);
+  const [mobileBootFallbackEnabled] = (0, import_react9.useState)(shouldUseMobileBootFallback);
+  const lastRequestedUrlRef = (0, import_react9.useRef)(DEFAULT_SOGS_BUNDLE_URL);
+  const fallbackAttemptedRef = (0, import_react9.useRef)(false);
+  const viewerStateRef = (0, import_react9.useRef)("idle");
+  const bootModeRef = (0, import_react9.useRef)("default");
   const bumpPath = (0, import_react9.useCallback)(() => setPathVersion((v) => v + 1), []);
+  (0, import_react9.useEffect)(() => {
+    viewerStateRef.current = viewerState;
+  }, [viewerState]);
+  (0, import_react9.useEffect)(() => {
+    bootModeRef.current = bootMode;
+  }, [bootMode]);
   (0, import_react9.useEffect)(() => {
     pathPlayingRef.current = pathPlaying;
   }, [pathPlaying]);
@@ -14502,7 +14527,12 @@ function SogsMigratedViewer({
     }
   }, [viewerState]);
   const attemptLoad = (0, import_react9.useCallback)(
-    (rawValue) => {
+    (rawValue, options = {}) => {
+      lastRequestedUrlRef.current = rawValue;
+      const nextBootMode = options.bootMode === "mobile-fallback" ? "mobile-fallback" : "default";
+      if (options.resetFallback !== false && nextBootMode === "default") {
+        fallbackAttemptedRef.current = false;
+      }
       setError(null);
       const normalized = normalizeBundleUrl(rawValue, { useProxy: useBundleProxy });
       if (!normalized) {
@@ -14512,6 +14542,7 @@ function SogsMigratedViewer({
       }
       const hole = resolveHoleView(CANYON_VISTA_HOLES.find((h) => h.id === selectedHoleIdRef.current));
       orbitFocusRef.current = { x: hole.target.x, y: hole.target.y, z: hole.target.z };
+      setBootMode(nextBootMode);
       setViewerState("loading");
       setActiveUrl(normalized);
       setIframeKey((k) => k + 1);
@@ -14527,8 +14558,31 @@ function SogsMigratedViewer({
       settings: viewerSettingsPath,
       content: activeUrl
     });
+    if (bootMode === "mobile-fallback") {
+      params.set("quality", "lq");
+      params.set("bootMode", "mobile-fallback");
+    }
     return `${viewerBase}?${params.toString()}`;
   })();
+  const requestMobileBootFallback = (0, import_react9.useCallback)(
+    (reason) => {
+      if (!mobileBootFallbackEnabled || fallbackAttemptedRef.current || bootModeRef.current === "mobile-fallback" || viewerStateRef.current === "ready") {
+        return false;
+      }
+      fallbackAttemptedRef.current = true;
+      pathStateRef.current.playing = false;
+      pathPlayingRef.current = false;
+      autoRotateRef.current = false;
+      setPathPlaying(false);
+      setAutoRotate(false);
+      try {
+        console.warn(`[sogs] mobile boot fallback: ${reason}`);
+      } catch {
+      }
+      return attemptLoad(lastRequestedUrlRef.current, { bootMode: "mobile-fallback", resetFallback: false });
+    },
+    [attemptLoad, mobileBootFallbackEnabled]
+  );
   (0, import_react9.useEffect)(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -14537,6 +14591,15 @@ function SogsMigratedViewer({
     setInputUrl(raw);
     attemptLoad(raw);
   }, [attemptLoad]);
+  (0, import_react9.useEffect)(() => {
+    if (!mobileBootFallbackEnabled || viewerState !== "loading" || bootMode !== "default") {
+      return;
+    }
+    const id = window.setTimeout(() => {
+      requestMobileBootFallback("first-frame-timeout");
+    }, MOBILE_BOOT_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, [bootMode, mobileBootFallbackEnabled, requestMobileBootFallback, viewerState, iframeKey]);
   (0, import_react9.useEffect)(() => {
     const onMessage = (event) => {
       if (event.data?.type === "supersplat:firstFrame" && event.source === iframeRef.current?.contentWindow) {
@@ -14593,6 +14656,9 @@ function SogsMigratedViewer({
         setSplatScale(ss);
         setSplatStr(formatSplatStrFromNums(sp, sr, ss));
         setViewerState("ready");
+      }
+      if (event.data?.type === "supersplat:bootError" && event.source === iframeRef.current?.contentWindow) {
+        requestMobileBootFallback(event.data.stage || "boot-error");
       }
       if (event.data?.type === "sogs:pickFocus" && event.source === iframeRef.current?.contentWindow) {
         const d = event.data;
@@ -14674,7 +14740,7 @@ function SogsMigratedViewer({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, []);
+  }, [requestMobileBootFallback]);
   (0, import_react9.useEffect)(() => {
     if (viewerState !== "ready") return;
     postToWindow(iframeRef.current?.contentWindow, { type: "sogs:worldGuides", enabled: showWorldAxes });

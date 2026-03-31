@@ -102409,7 +102409,7 @@ const main = (app, camera, settingsJson, config) => {
     const events = new EventHandler();
     const state = observe(events, {
         readyToRender: false,
-        hqMode: true,
+        hqMode: !config.lowQuality,
         progress: 0,
         inputMode: 'desktop',
         cameraMode: 'orbit',
