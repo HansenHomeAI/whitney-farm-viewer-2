@@ -56,6 +56,8 @@
 
             const posterUrl = url.searchParams.get('poster');
             const explicitSkyboxUrl = url.searchParams.get('skybox');
+            const skyboxPitch = Number.parseFloat(url.searchParams.get('skyboxPitch') ?? '');
+            const skyboxVOffset = Number.parseFloat(url.searchParams.get('skyboxVOffset') ?? '');
             const quality = url.searchParams.get('quality') === 'lq' ? 'lq' : 'hq';
             const lowQuality = quality === 'lq';
             const settingsUrl = url.searchParams.has('settings') ? url.searchParams.get('settings') : './settings.json';
@@ -68,6 +70,7 @@
                     poster: posterUrl && createImage(posterUrl),
                     skyboxUrl: lowQuality ? null : skyboxUrl,
                     deferredSkyboxUrl: lowQuality ? skyboxUrl : null,
+                    skyboxVOffset: Number.isFinite(skyboxVOffset) ? skyboxVOffset : 0,
                     contentUrl,
                     contents: fetch(contentUrl),
                     lowQuality,
@@ -81,7 +84,20 @@
 
             window.sse = {
                 configReady: sseConfigPromise,
-                settings: fetch(settingsUrl).then(response => response.json())
+                settings: fetch(settingsUrl).then(response => response.json()).then((settings) => {
+                    if (!Number.isFinite(skyboxPitch) || skyboxPitch === 0) {
+                        return settings;
+                    }
+                    const render = settings.render ?? {};
+                    const existingRotation = Array.isArray(render.skyboxRotation) ? render.skyboxRotation : [0, 0, 0];
+                    return {
+                        ...settings,
+                        render: {
+                            ...render,
+                            skyboxRotation: [skyboxPitch, existingRotation[1] ?? 0, existingRotation[2] ?? 0]
+                        }
+                    };
+                })
             };
         </script>
     </head>

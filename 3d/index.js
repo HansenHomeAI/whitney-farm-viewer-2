@@ -7284,7 +7284,7 @@ var SOGS_DEFAULT_SCENE = {
   /** scene-v1 export 2026-03-31 */
   position: [0.03, 0.1, 0.15],
   /** Euler ° (PlayCanvas order: X, Y, Z) */
-  rotation: [-100, 0, 1.23],
+  rotation: [81, 80, -179.2],
   scale: 1,
   fov: 60
 };
@@ -7312,7 +7312,10 @@ var PROXY_HOSTS = /* @__PURE__ */ new Set([
   "spaceport-ml-processing.s3.amazonaws.com",
   "spaceport-ml-processing.s3.us-west-2.amazonaws.com"
 ]);
-var DEFAULT_SOGS_BUNDLE_URL = "https://spaceport-ml-processing.s3.amazonaws.com/compressed/edited-splat-20260330-browser/supersplat_bundle/meta.json";
+var DEFAULT_SOGS_BUNDLE_URL = "https://spaceport-ml-processing.s3.amazonaws.com/compressed/edited-splat-20260402-155312/supersplat_bundle/meta.json";
+var DEFAULT_SOGS_SKYBOX_URL = "https://spaceport-ml-processing.s3.amazonaws.com/viewer-assets/skyboxes/whitney-farm-equirect-skybox-20260403-v2.jpg";
+var DEFAULT_SOGS_SKYBOX_PITCH = 0;
+var DEFAULT_SOGS_SKYBOX_VOFFSET = -0.0646;
 var MOBILE_BOOT_TIMEOUT_MS = 6e3;
 function shouldUseMobileBootFallback() {
   if (typeof window === "undefined") return false;
@@ -7413,16 +7416,15 @@ var CANYON_VISTA_INTRO = {
   autoPlayDelayMs: 400
 };
 var CANYON_VISTA_DEFAULT_PATH_CHECKPOINTS = [
-  { position: { x: 0.6791898999932509, y: 0.07990382982341952, z: 0.5074813058270051 }, lookAt: { x: 0.012764978613674982, y: 0.0004910887733488162, z: -0.004446662028953052 }, duration: 5 },
-  { position: { x: 0.21877200036213915, y: 0.05435241751055438, z: 0.050309228502857614 }, lookAt: { x: 0.012764978613674982, y: 0.0004910887733488092, z: -0.00444666202895308 }, duration: 5 },
-  { position: { x: -0.05746402939965655, y: 0.07188675979494871, z: -0.20344249108664314 }, lookAt: { x: 0.00707356087520699, y: -0.004655967476795045, z: -0.009171879285637535 }, duration: 5 },
-  { position: { x: -0.636520024501938, y: 0.02618560064759914, z: -0.23786667886050003 }, lookAt: { x: 0.007073560875207163, y: -0.004655967476795048, z: -0.00917187928563723 }, duration: 5 },
-  { position: { x: -0.8183726481816497, y: 0.1190966805863559, z: 0.34895078549053304 }, lookAt: { x: 0.007073560875207163, y: -0.004655967476795045, z: -0.009171879285637174 }, duration: 5 },
-  { position: { x: -0.3246624955590886, y: 0.10303368524885184, z: 0.8294473027824899 }, lookAt: { x: 0.007073560875207219, y: -0.004655967476795059, z: -0.00917187928563723 }, duration: 5 },
-  { position: { x: 0.2700226640861939, y: 0.07171697954970997, z: 0.8568263580442018 }, lookAt: { x: 0.007073560875207219, y: -0.004655967476795031, z: -0.009171879285637008 }, duration: 5 },
-  { position: { x: 0.3411824207795962, y: 0.23002605730756465, z: 0.08821992345249917 }, lookAt: { x: 0.007073560875207163, y: -0.004655967476795059, z: -0.009171879285637133 }, duration: 5 },
-  { position: { x: 0.03809737566390302, y: 0.20380766315664758, z: -0.3754492975881817 }, lookAt: { x: 0.007073560875207153, y: -0.0046559674767950865, z: -0.009171879285637174 }, duration: 5 },
-  { position: { x: -0.3680191885531783, y: 0.18045078795000266, z: -0.06933522289012534 }, lookAt: { x: 0.007073560875207163, y: -0.004655967476795031, z: -0.009171879285637168 }, duration: 5 }
+  { position: { x: 0.40964477255036946, y: 0.1317984628066139, z: -0.541768565614951 }, lookAt: { x: -0.11131089694431351, y: -0.0008434320599496337, z: 0.2082213085017396 }, duration: 5 },
+  { position: { x: 0.13965298043640384, y: 0.12097835966092779, z: -0.19173660627796352 }, lookAt: { x: -0.11131089694431362, y: -0.0008434320599496337, z: 0.20822130850173953 }, duration: 5 },
+  { position: { x: -0.43745824533905564, y: 0.11219746848289015, z: 0.10143926211327417 }, lookAt: { x: -0.11131089694431362, y: -0.0008434320599496475, z: 0.20822130850173948 }, duration: 5 },
+  { position: { x: -0.7574030409745154, y: 0.11223439371204139, z: 0.6432294103899845 }, lookAt: { x: -0.11131089694431251, y: -0.0008434320599497169, z: 0.2082213085017397 }, duration: 5 },
+  { position: { x: -0.05049146118671622, y: 0.10292318408873609, z: 0.9934069813144393 }, lookAt: { x: -0.11131089694431287, y: -0.0008434320599497863, z: 0.20822130850174048 }, duration: 5 },
+  { position: { x: 0.7337572595053388, y: 0.119925270827219, z: 0.6049160023210227 }, lookAt: { x: -0.11131089694431417, y: -0.0008434320599496475, z: 0.20822130850173998 }, duration: 5 },
+  { position: { x: 0.07399163788599744, y: 0.1551885974040995, z: -0.013755784878152266 }, lookAt: { x: -0.1113108969443142, y: -0.0008434320599496337, z: 0.20822130850173998 }, duration: 5 },
+  { position: { x: -0.2542575113051125, y: 0.12954908692391795, z: 0.026530091324198368 }, lookAt: { x: -0.11131089694431417, y: -0.0008434320599496614, z: 0.20822130850174006 }, duration: 5 },
+  { position: { x: 0.11486072723000557, y: 0.13823218153948877, z: 0.356507861161102 }, lookAt: { x: -0.11131089694431417, y: -0.0008434320599496614, z: 0.20822130850174006 }, duration: 5 }
 ];
 var CANYON_VISTA_CAMERA_START_Y = 0.55;
 var CANYON_VISTA_CAMERA_WORLD_BOUNDS = {
@@ -14564,7 +14566,10 @@ function SogsMigratedViewer({
     if (!activeUrl) return null;
     const params = new URLSearchParams({
       settings: viewerSettingsPath,
-      content: activeUrl
+      content: activeUrl,
+      skybox: DEFAULT_SOGS_SKYBOX_URL,
+      skyboxPitch: String(DEFAULT_SOGS_SKYBOX_PITCH),
+      skyboxVOffset: String(DEFAULT_SOGS_SKYBOX_VOFFSET)
     });
     if (bootMode === "mobile-fallback") {
       params.set("quality", "lq");
