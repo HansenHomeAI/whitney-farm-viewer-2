@@ -101597,11 +101597,20 @@ class Viewer {
         // enable anonymous CORS for image loading in safari
         app.loader.getHandler('texture').imgParser.crossOrigin = 'anonymous';
         // render skybox as plain equirect
+        const skyboxVOffset = Number.isFinite(config.skyboxVOffset) ? config.skyboxVOffset : 0;
         const glsl = ShaderChunks.get(graphicsDevice, 'glsl');
-        glsl.set('skyboxPS', glsl.get('skyboxPS').replace('mapRoughnessUv(uv, mipLevel)', 'uv'));
+        const glslSkybox = glsl.get('skyboxPS')
+            .replace('vec2 uv = toSphericalUv(normalize(dir));', `vec2 uv = toSphericalUv(normalize(dir));
+				uv.y = clamp(uv.y + ${skyboxVOffset.toFixed(4)}, 0.0, 1.0);`)
+            .replace('mapRoughnessUv(uv, mipLevel)', 'uv');
+        glsl.set('skyboxPS', glslSkybox);
         glsl.set('pickPS', pickDepthGlsl);
         const wgsl = ShaderChunks.get(graphicsDevice, 'wgsl');
-        wgsl.set('skyboxPS', wgsl.get('skyboxPS').replace('mapRoughnessUv(uv, uniform.mipLevel)', 'uv'));
+        const wgslSkybox = wgsl.get('skyboxPS')
+            .replace('let uv : vec2f = toSphericalUv(normalize(dir));', `var uv : vec2f = toSphericalUv(normalize(dir));
+				uv.y = clamp(uv.y + ${skyboxVOffset.toFixed(4)}, 0.0, 1.0);`)
+            .replace('mapRoughnessUv(uv, uniform.mipLevel)', 'uv');
+        wgsl.set('skyboxPS', wgslSkybox);
         wgsl.set('pickPS', pickDepthWgsl);
         // disable auto render, we'll render only when camera changes
         app.autoRender = false;
